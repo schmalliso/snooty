@@ -73,6 +73,7 @@ const cleanOldTOC = str => {
 };
 
 const clickPills = async (page, slug, { cloud, drivers, platforms }) => {
+  if (page.url().includes(localUrl)) platforms = convertToLegacy(platforms);
   if (slug) {
     await page.click(`li[data-tabid="${cloud}"]`).catch(() => {});
     await page.click(`li[data-tabid="${drivers}"]`).catch(() => {});
@@ -81,8 +82,8 @@ const clickPills = async (page, slug, { cloud, drivers, platforms }) => {
 };
 
 // Don't include links in an admonition that is incorrectly shown when "Cloud" is selected on prod
-const removeEnableAuthLink = (hrefObj, baseUrl, storageObj, slug) => {
-  if (baseUrl === prodUrl && storageObj.cloud === 'cloud' && slug.includes('server')) {
+const removeEnableAuthLink = (hrefObj, storageObj, slug) => {
+  if (storageObj.cloud === 'cloud' && slug.includes('server')) {
     delete hrefObj['Enable Auth']; // eslint-disable-line no-param-reassign
   }
   return hrefObj;
@@ -128,6 +129,18 @@ describe('landing page', () => {
 
 describe('with default tabs', () => {
   describe.each(slugArray)('%p', slug => {
+    let prodPage;
+    let localPage;
+
+    beforeAll(async () => {
+      prodPage = await browser.newPage();
+      localPage = await browser.newPage();
+      await prodPage.goto(`${prodUrl}/${slug}`);
+      await localPage.goto(`${localUrl}/${slug}`);
+      await clickPills(prodPage, slug, defaultStorageObj);
+      await clickPills(localPage, slug, defaultStorageObj);
+    });
+
     it(`file text is the same`, async () => {
       expect.assertions(1);
 
@@ -146,17 +159,34 @@ describe('with default tabs', () => {
 
     it(`links are the same`, async () => {
       const [oldLinks, newLinks] = await Promise.all([
-        await getPageLinks(prodUrl, slug, defaultStorageObj, clickPills, removeEnableAuthLink),
-        await getPageLinks(localUrl, slug, defaultStorageObj, clickPills),
+        await getPageLinks(prodPage, prodUrl),
+        await getPageLinks(localPage, localUrl),
       ]);
-      expect(newLinks).toEqual(oldLinks);
+      expect(newLinks).toEqual(removeEnableAuthLink(oldLinks, defaultStorageObj, slug));
     });
   });
 });
 
 describe('with local storage', () => {
   describe.each(slugArray)('%p', slug => {
+    let prodPage;
+    let localPage;
+
+    beforeAll(async () => {
+      prodPage = await browser.newPage();
+      localPage = await browser.newPage();
+      await prodPage.goto(`${prodUrl}/${slug}`);
+      await localPage.goto(`${localUrl}/${slug}`);
+    });
+
     describe.each(DEPLOYMENTS)('deployment: %p', deployment => {
+      const storageObj = { ...defaultStorageObj, cloud: deployment };
+
+      beforeAll(async () => {
+        await clickPills(prodPage, slug, storageObj);
+        await clickPills(localPage, slug, storageObj);
+      });
+
       it(`deployment file text is the same`, async () => {
         const [legacyText, snootyText] = await runComparisons(slug, {
           cloud: deployment,
@@ -166,14 +196,21 @@ describe('with local storage', () => {
 
       it(`deployment links are the same`, async () => {
         const [oldLinks, newLinks] = await Promise.all([
-          await getPageLinks(prodUrl, slug, defaultStorageObj, clickPills, removeEnableAuthLink),
-          await getPageLinks(localUrl, slug, defaultStorageObj, clickPills),
+          await getPageLinks(prodPage, prodUrl),
+          await getPageLinks(localPage, localUrl),
         ]);
-        expect(newLinks).toEqual(oldLinks);
+        expect(newLinks).toEqual(removeEnableAuthLink(oldLinks, storageObj, slug));
       });
     });
 
     describe.each(guidesLanguages)('language: %p', language => {
+      const storageObj = { ...defaultStorageObj, drivers: language };
+
+      beforeAll(async () => {
+        await clickPills(prodPage, slug, storageObj);
+        await clickPills(localPage, slug, storageObj);
+      });
+
       it(`language file text is the same`, async () => {
         const [legacyText, snootyText] = await runComparisons(slug, {
           drivers: language,
@@ -181,16 +218,23 @@ describe('with local storage', () => {
         return expect(cleanString(snootyText)).toEqual(cleanString(cleanOldString(legacyText)));
       }, 1500000);
 
-      it(`language links are the same`, async () => {
+      it.only(`language links are the same`, async () => {
         const [oldLinks, newLinks] = await Promise.all([
-          await getPageLinks(prodUrl, slug, defaultStorageObj, clickPills, removeEnableAuthLink),
-          await getPageLinks(localUrl, slug, defaultStorageObj, clickPills),
+          await getPageLinks(prodPage, prodUrl),
+          await getPageLinks(localPage, localUrl),
         ]);
-        expect(newLinks).toEqual(oldLinks);
+        expect(newLinks).toEqual(removeEnableAuthLink(oldLinks, storageObj, slug));
       });
     });
 
     describe.each(guidesPlatforms)('platform: %p', platform => {
+      const storageObj = { ...defaultStorageObj, platforms: platform };
+
+      beforeAll(async () => {
+        await clickPills(prodPage, slug, storageObj);
+        await clickPills(localPage, slug, storageObj);
+      });
+
       it(`platform file text is the same`, async () => {
         const [legacyText, snootyText] = await runComparisons(slug, {
           platforms: platform,
@@ -200,10 +244,10 @@ describe('with local storage', () => {
 
       it(`platform links are the same`, async () => {
         const [oldLinks, newLinks] = await Promise.all([
-          await getPageLinks(prodUrl, slug, defaultStorageObj, clickPills, removeEnableAuthLink),
-          await getPageLinks(localUrl, slug, defaultStorageObj, clickPills),
+          await getPageLinks(prodPage, prodUrl),
+          await getPageLinks(localPage, localUrl),
         ]);
-        expect(newLinks).toEqual(oldLinks);
+        expect(newLinks).toEqual(removeEnableAuthLink(oldLinks, storageObj, slug));
       });
     });
   });

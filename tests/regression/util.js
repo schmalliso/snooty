@@ -47,22 +47,16 @@ const setUpPage = async (baseUrl, slug, storageObj, interactWithPage = undefined
   return page;
 };
 
-export const getPageText = async (baseUrl, slug, storageObj, getTargetClass, interactWithPage = undefined) => {
-  const page = await setUpPage(baseUrl, slug, storageObj, interactWithPage);
+export const getPageText = async (page, slug, storageObj, getTargetClass, interactWithPage = undefined) => {
+  // const page = await setUpPage(baseUrl, slug, storageObj, interactWithPage);
+
   const className = getTargetClass && typeof getTargetClass === 'function' ? getTargetClass(slug) : '.body';
   const bodyElement = await page.$(className);
   return page.evaluate(element => Promise.resolve(element.innerText), bodyElement);
 };
 
-export const getPageLinks = async (
-  baseUrl,
-  slug,
-  storageObj,
-  interactWithPage = undefined,
-  filterLinks = undefined
-) => {
-  const page = await setUpPage(baseUrl, slug, storageObj, interactWithPage);
-  let hrefs = await page.$$eval(
+export const getPageLinks = async (page, baseUrl) => {
+  return page.$$eval(
     '.body a',
     (as, url) => {
       return as.reduce((acc, a) => {
@@ -79,12 +73,6 @@ export const getPageLinks = async (
     },
     baseUrl
   );
-
-  if (filterLinks && typeof filterLinks === 'function') {
-    hrefs = filterLinks(hrefs, baseUrl, storageObj, slug);
-  }
-
-  return hrefs;
 };
 
 /*
