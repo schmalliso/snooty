@@ -73,7 +73,7 @@ const cleanOldTOC = str => {
 };
 
 const clickPills = async (page, slug, { cloud, drivers, platforms }) => {
-  if (page.url().includes(localUrl)) platforms = convertToLegacy(platforms);
+  if (page.url().includes(localUrl)) platforms = convertToLegacy(platforms); // eslint-disable-line no-param-reassign
   if (slug) {
     await page.click(`li[data-tabid="${cloud}"]`).catch(() => {});
     await page.click(`li[data-tabid="${drivers}"]`).catch(() => {});
@@ -89,40 +89,31 @@ const removeEnableAuthLink = (hrefObj, storageObj, slug) => {
   return hrefObj;
 };
 
-const getTargetClass = slug => (slug ? '.body' : 'guide-category-list');
-
-const runComparisons = async (slug, storageObj = defaultStorageObj) => {
-  const key = Object.keys(storageObj)[0];
-  const val = Object.values(storageObj)[0];
-  return Promise.all([
-    getPageText(
-      prodUrl,
-      slug,
-      {
-        ...defaultStorageObj,
-        [key]: convertToLegacy(val),
-      },
-      getTargetClass,
-      clickPills
-    ),
-    getPageText(
-      localUrl,
-      slug,
-      {
-        ...defaultStorageObj,
-        ...storageObj,
-      },
-      getTargetClass,
-      clickPills
-    ),
-  ]);
-};
-
 describe('landing page', () => {
+  let prodPage;
+  let localPage;
+
+  beforeAll(async () => {
+    prodPage = await browser.newPage();
+    localPage = await browser.newPage();
+    await prodPage.goto(prodUrl);
+    await localPage.goto(localUrl);
+  });
+
+  afterAll(async () => {
+    await prodPage.close();
+    await localPage.close();
+  });
+
   it(`file text is the same`, async () => {
     expect.assertions(1);
 
-    const [legacyText, snootyText] = await runComparisons('');
+    const landingPageClass = '.guide-category-list';
+    const [legacyText, snootyText] = await Promise.all([
+      await getPageText(prodPage, landingPageClass),
+      await getPageText(localPage, landingPageClass),
+    ]);
+
     return expect(snootyText).toEqual(legacyText);
   });
 });
@@ -141,23 +132,28 @@ describe('with default tabs', () => {
       await clickPills(localPage, slug, defaultStorageObj);
     });
 
+    afterAll(async () => {
+      await prodPage.close();
+      await localPage.close();
+    });
+
     it(`file text is the same`, async () => {
       expect.assertions(1);
 
-      const [legacyText, snootyText] = await runComparisons(slug);
+      const [legacyText, snootyText] = await Promise.all([await getPageText(prodPage), await getPageText(localPage)]);
       return expect(cleanString(snootyText)).toEqual(cleanString(cleanOldString(legacyText)));
     });
 
     it(`table of contents labels are the same`, async () => {
       const tocClass = '.left-toc';
       const [oldTOC, newTOC] = await Promise.all([
-        await getClassText(prodUrl, slug, tocClass),
-        await getClassText(localUrl, slug, tocClass),
+        await getClassText(prodPage, tocClass),
+        await getClassText(localPage, tocClass),
       ]);
       expect(newTOC).toEqual(cleanOldTOC(oldTOC));
     });
 
-    it(`links are the same`, async () => {
+    it.only(`links are the same`, async () => {
       const [oldLinks, newLinks] = await Promise.all([
         await getPageLinks(prodPage, prodUrl),
         await getPageLinks(localPage, localUrl),
@@ -179,6 +175,11 @@ describe('with local storage', () => {
       await localPage.goto(`${localUrl}/${slug}`);
     });
 
+    afterAll(async () => {
+      await prodPage.close();
+      await localPage.close();
+    });
+
     describe.each(DEPLOYMENTS)('deployment: %p', deployment => {
       const storageObj = { ...defaultStorageObj, cloud: deployment };
 
@@ -188,9 +189,7 @@ describe('with local storage', () => {
       });
 
       it(`deployment file text is the same`, async () => {
-        const [legacyText, snootyText] = await runComparisons(slug, {
-          cloud: deployment,
-        });
+        const [legacyText, snootyText] = await Promise.all([await getPageText(prodPage), await getPageText(localPage)]);
         return expect(cleanString(snootyText)).toEqual(cleanString(cleanOldString(legacyText)));
       }, 1500000);
 
@@ -212,13 +211,11 @@ describe('with local storage', () => {
       });
 
       it(`language file text is the same`, async () => {
-        const [legacyText, snootyText] = await runComparisons(slug, {
-          drivers: language,
-        });
+        const [legacyText, snootyText] = await Promise.all([await getPageText(prodPage), await getPageText(localPage)]);
         return expect(cleanString(snootyText)).toEqual(cleanString(cleanOldString(legacyText)));
       }, 1500000);
 
-      it.only(`language links are the same`, async () => {
+      it(`language links are the same`, async () => {
         const [oldLinks, newLinks] = await Promise.all([
           await getPageLinks(prodPage, prodUrl),
           await getPageLinks(localPage, localUrl),
@@ -236,9 +233,7 @@ describe('with local storage', () => {
       });
 
       it(`platform file text is the same`, async () => {
-        const [legacyText, snootyText] = await runComparisons(slug, {
-          platforms: platform,
-        });
+        const [legacyText, snootyText] = await Promise.all([await getPageText(prodPage), await getPageText(localPage)]);
         return expect(cleanString(snootyText)).toEqual(cleanString(cleanStringByPlatform(legacyText, platform)));
       }, 1500000);
 

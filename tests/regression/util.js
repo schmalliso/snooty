@@ -37,21 +37,8 @@ export const cleanString = str => {
     .replace(/tar -zxvf mongodb-macos-x86_64-([0-9]+).([0-9]+).tgz\n+/, 'tar -zxvf mongodb-macos-x86_64-1.0.tgz');
 };
 
-const setUpPage = async (baseUrl, slug, storageObj, interactWithPage = undefined) => {
-  const page = await browser.newPage();
-  await page.goto(`${baseUrl}/${slug}`);
-
-  if (interactWithPage && typeof interactWithPage === 'function') {
-    await interactWithPage(page, slug, storageObj);
-  }
-  return page;
-};
-
-export const getPageText = async (page, slug, storageObj, getTargetClass, interactWithPage = undefined) => {
-  // const page = await setUpPage(baseUrl, slug, storageObj, interactWithPage);
-
-  const className = getTargetClass && typeof getTargetClass === 'function' ? getTargetClass(slug) : '.body';
-  const bodyElement = await page.$(className);
+export const getPageText = async (page, bodyClass = '.body') => {
+  const bodyElement = await page.$(bodyClass);
   return page.evaluate(element => Promise.resolve(element.innerText), bodyElement);
 };
 
@@ -60,6 +47,10 @@ export const getPageLinks = async (page, baseUrl) => {
     '.body a',
     (as, url) => {
       return as.reduce((acc, a) => {
+        // Ignore copy/copied buttons as these are very flaky to test
+        if (a.text.trim() === 'copycopied') {
+          return acc;
+        }
         if (a.className === 'headerlink' || a.offsetWidth > 0 || a.offsetHeight > 0) {
           acc[a.text.trim()] = a.href
             .replace(url.replace('https://', 'http://'), '')
@@ -79,9 +70,7 @@ export const getPageLinks = async (page, baseUrl) => {
  * Return the text that is displayed in a table of contents.
  * The class surrounding the TOC must be passed as an argument.
  */
-export const getClassText = async (baseUrl, slug, tocClass) => {
-  const page = await browser.newPage();
-  await page.goto(`${baseUrl}/${slug}`);
-  const tocElement = await page.$(tocClass);
+export const getClassText = async (page, className) => {
+  const tocElement = await page.$(className);
   return page.evaluate(element => Promise.resolve(element.innerText), tocElement);
 };
