@@ -8,7 +8,6 @@ import GuideSection from '../components/GuideSection';
 import GuideHeading from '../components/GuideHeading';
 import Widgets from '../components/Widgets/Widgets';
 import { LANGUAGES, DEPLOYMENTS, SECTION_NAME_MAPPING } from '../constants';
-import { getLocalValue } from '../utils/browser-storage';
 import { findKeyValuePair } from '../utils/find-key-value-pair';
 import { throttle } from '../utils/throttle';
 import { getNestedValue } from '../utils/get-nested-value';
@@ -78,23 +77,20 @@ export default class Guide extends Component {
   };
 
   addGuidesTabset = (tabsetName, tabData) => {
-    const { setActiveTab } = this.context;
-    let tabs = tabData.map(tab => tab.argument[0].value);
+    const tabs = tabData.map(tab => getNestedValue(['options', 'tabid'], tab));
     if (tabsetName === 'cloud') {
-      tabs = DEPLOYMENTS.filter(tab => tabs.includes(tab));
-      this.setNamedTabData(tabsetName, tabs, DEPLOYMENTS);
+      const tabsFiltered = DEPLOYMENTS.filter(tab => tabs.includes(tab));
+      this.setNamedTabData(tabsetName, tabsFiltered, DEPLOYMENTS);
     } else if (tabsetName === 'drivers') {
-      tabs = LANGUAGES.filter(tab => tabs.includes(tab));
-      this.setNamedTabData(tabsetName, tabs, LANGUAGES);
-    } else {
-      setActiveTab(tabsetName, getLocalValue(tabsetName) || tabs[0]);
+      const tabsFiltered = LANGUAGES.filter(tab => tabs.includes(tab));
+      this.setNamedTabData(tabsetName, tabsFiltered, LANGUAGES);
     }
   };
 
   matchArraySorting = (tabs, referenceArray) => referenceArray.filter(t => tabs.includes(t));
 
   setNamedTabData = (tabsetName, tabs, constants) => {
-    const { setActiveTab } = this.context;
+    const { activeTabs, setActiveTab } = this.context;
     this.setState(
       prevState => ({
         [tabsetName]: this.matchArraySorting(
@@ -102,7 +98,12 @@ export default class Guide extends Component {
           constants
         ),
       }),
-      () => setActiveTab(tabsetName, getLocalValue(tabsetName) || tabs[0])
+      () => {
+        // If a tab preference isn't saved to local storage, select the first tab by default
+        if (!Object.prototype.hasOwnProperty.call(activeTabs, tabsetName)) {
+          setActiveTab(tabsetName, this.state[tabsetName][0]); // eslint-disable-line react/destructuring-assignment
+        }
+      }
     );
   };
 
@@ -115,14 +116,13 @@ export default class Guide extends Component {
   };
 
   createSections() {
-    const { pageContext } = this.props;
+    const { addPillstrip, pageContext, pillstrips } = this.props;
     if (this.bodySections.length === 0) {
       return this.sections.map(section => {
         return (
           <ComponentFactory
             nodeData={section}
             refDocMapping={getNestedValue(['__refDocMapping'], pageContext) || {}}
-            includes={pageContext.includes}
             pageMetadata={pageContext.pageMetadata}
           />
         );
@@ -132,14 +132,15 @@ export default class Guide extends Component {
     return this.bodySections.map((section, index) => {
       return (
         <GuideSection
+          addPillstrip={addPillstrip}
           sectionDepth={2}
           guideSectionData={section}
           key={index}
           headingRef={this.sectionRefs[index]}
           refDocMapping={getNestedValue(['__refDocMapping'], pageContext) || {}}
           addTabset={this.addGuidesTabset}
-          includes={pageContext.includes}
           pageMetadata={pageContext.pageMetadata}
+          pillstrips={pillstrips}
         />
       );
     });
@@ -168,7 +169,6 @@ export default class Guide extends Component {
                 cloud={cloud}
                 description={findKeyValuePair(this.sections, 'name', 'result_description')}
                 drivers={drivers}
-                includes={pageContext.includes}
                 pageMetadata={pageContext.pageMetadata}
                 refDocMapping={getNestedValue(['__refDocMapping'], pageContext) || {}}
                 time={findKeyValuePair(this.sections, 'name', 'time')}
@@ -178,7 +178,7 @@ export default class Guide extends Component {
               <Footer />
             </div>
           </div>
-          <Widgets guideName={pageSlug} snootyStitchId={pageContext.snootyStitchId} />
+          {!process.env.PREVIEW_PAGE && <Widgets guideName={pageSlug} snootyStitchId={pageContext.snootyStitchId} />}
         </div>
       </React.Fragment>
     );
@@ -186,6 +186,7 @@ export default class Guide extends Component {
 }
 
 Guide.propTypes = {
+  addPillstrip: PropTypes.func,
   pageContext: PropTypes.shape({
     __refDocMapping: PropTypes.shape({
       ast: PropTypes.shape({
@@ -193,10 +194,15 @@ Guide.propTypes = {
       }).isRequired,
     }).isRequired,
     snootyStitchId: PropTypes.string.isRequired,
-    includes: PropTypes.objectOf(PropTypes.object).isRequired,
     pageMetadata: PropTypes.objectOf(PropTypes.object).isRequired,
   }).isRequired,
   path: PropTypes.string.isRequired,
+  pillstrips: PropTypes.objectOf(PropTypes.object),
+};
+
+Guide.defaultProps = {
+  addPillstrip: () => {},
+  pillstrips: {},
 };
 
 Guide.contextType = TabContext;

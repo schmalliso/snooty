@@ -7,7 +7,10 @@ import Navbar from '../components/Navbar';
 
 const Document = props => {
   const {
-    pageContext: { includes, pageMetadata, __refDocMapping },
+    addPillstrip,
+    footnotes,
+    pageContext: { pageMetadata, __refDocMapping },
+    pillstrips,
     substitutions,
   } = props;
   const pageNodes = getNestedValue(['ast', 'children'], __refDocMapping) || [];
@@ -27,11 +30,13 @@ const Document = props => {
                   <div className="bc" />
                   {pageNodes.map((child, index) => (
                     <ComponentFactory
+                      addPillstrip={addPillstrip}
+                      footnotes={footnotes}
                       key={index}
                       nodeData={child}
                       refDocMapping={__refDocMapping}
-                      includes={includes}
                       pageMetadata={pageMetadata}
+                      pillstrips={pillstrips}
                       substitutions={substitutions}
                     />
                   ))}
@@ -47,16 +52,25 @@ const Document = props => {
 };
 
 Document.propTypes = {
+  addPillstrip: PropTypes.func,
+  footnotes: PropTypes.objectOf(PropTypes.object),
   pageContext: PropTypes.shape({
     __refDocMapping: PropTypes.shape({
       ast: PropTypes.shape({
         children: PropTypes.array,
       }).isRequired,
     }).isRequired,
-    includes: PropTypes.objectOf(PropTypes.object),
     pageMetadata: PropTypes.objectOf(PropTypes.object).isRequired,
   }).isRequired,
-  substitutions: PropTypes.objectOf(PropTypes.array).isRequired,
+  pillstrips: PropTypes.objectOf(PropTypes.object),
+  substitutions: PropTypes.objectOf(PropTypes.array),
+};
+
+Document.defaultProps = {
+  addPillstrip: () => {},
+  footnotes: {},
+  pillstrips: {},
+  substitutions: {},
 };
 
 export default Document;

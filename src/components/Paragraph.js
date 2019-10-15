@@ -2,13 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ComponentFactory from './ComponentFactory';
 
-const Paragraph = ({ admonition, nodeData, parentNode, position, ...rest }) => {
+const SKIP_P_TAGS = ['caption', 'listItem', 'listTable', 'footnote'];
+
+const Paragraph = ({ nodeData, parentNode, ...rest }) => {
   // For paragraph nodes that appear inside certain containers, skip <p> tags and just render their contents
-  if (parentNode === 'listItem' || parentNode === 'listTable') {
+  if (SKIP_P_TAGS.includes(parentNode)) {
     return nodeData.children.map((element, index) => <ComponentFactory {...rest} nodeData={element} key={index} />);
   }
   return (
-    <p style={{ margin: admonition ? '0 0 12.5px' : '' }} className={position}>
+    <p>
       {nodeData.children.map((element, index) => (
         <ComponentFactory {...rest} nodeData={element} key={index} />
       ))}
@@ -17,7 +19,6 @@ const Paragraph = ({ admonition, nodeData, parentNode, position, ...rest }) => {
 };
 
 Paragraph.propTypes = {
-  admonition: PropTypes.bool,
   nodeData: PropTypes.shape({
     children: PropTypes.arrayOf(
       PropTypes.shape({
@@ -27,13 +28,10 @@ Paragraph.propTypes = {
     ).isRequired,
   }).isRequired,
   parentNode: PropTypes.string,
-  position: PropTypes.string,
 };
 
 Paragraph.defaultProps = {
-  admonition: false,
   parentNode: undefined,
-  position: '',
 };
 
 export default Paragraph;

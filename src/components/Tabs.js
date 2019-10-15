@@ -6,46 +6,64 @@ import { PLATFORMS, stringifyTab } from '../constants';
 import { reportAnalytics } from '../utils/report-analytics';
 import { getNestedValue } from '../utils/get-nested-value';
 
+const GUIDES_PILLSETS = ['cloud', 'drivers'];
+
 export default class Tabs extends Component {
   constructor(props) {
     super(props);
     const { nodeData } = this.props;
     const tabsetName = getNestedValue(['options', 'tabset'], nodeData) || this.generateAnonymousTabsetName(nodeData);
-    this.state = { tabsetName };
+    this.state = { tabsetName, activeTabs: undefined };
   }
 
-  componentDidMount() {
-    const { addTabset, nodeData } = this.props;
+  componentDidUpdate(prevProps) {
     const { setActiveTab } = this.context;
+    const { addPillstrip, addTabset, nodeData, pillstrips } = this.props;
     const { tabsetName } = this.state;
-    if (addTabset !== undefined) {
-      addTabset(tabsetName, [...nodeData.children]);
-    } else {
-      setActiveTab(nodeData.children[0].argument[0].value, tabsetName);
+
+    // If the rST includes a `tabs-pillstrip` directive that matches this tabset, add the data from this node to our global pillstrip object
+    if (prevProps.pillstrips[tabsetName] !== pillstrips[tabsetName] && Object.keys(pillstrips).includes(tabsetName)) {
+      addPillstrip(tabsetName, nodeData);
+    }
+
+    /*
+     * There is currently no way to know if componentDidUpdate was caused by a context change. To approximate this, save the activeTabs context
+     * object to this component's state and compare state with the context's current value. When the layout component has mounted
+     * (i.e. getLocalValue has been called), we can update the active pill/tabs and component state with any previously set values.
+     *
+     * Implement using function parameters if this feature is ever implemented: https://github.com/facebook/react/issues/14398
+     */
+    if (
+      this.context.activeTabs !== undefined && // eslint-disable-line react/destructuring-assignment
+      JSON.stringify(this.context.activeTabs) !== JSON.stringify(this.state.activeTabs) // eslint-disable-line react/destructuring-assignment
+    ) {
+      const { activeTabs } = this.context;
+      // React Docs explicitly say that it is okay to call setState from componentDidUpdate, so ignore lint warning
+      // https://reactjs.org/docs/react-component.html#componentdidupdate
+      this.setState({ activeTabs }); // eslint-disable-line react/no-did-update-set-state
+      if (GUIDES_PILLSETS.includes(tabsetName) && addTabset !== undefined) {
+        addTabset(tabsetName, [...nodeData.children], activeTabs);
+      } else if (!Object.prototype.hasOwnProperty.call(activeTabs, tabsetName)) {
+        // If a tab preference isn't saved to local storage, select the first tab by default
+        setActiveTab(tabsetName, getNestedValue(['children', 0, 'options', 'tabid'], nodeData));
+      }
     }
   }
 
   /*
-   * For anonymous tabsets, create a tabset name that alphabetizes the tab names, formats them in lowercase,
-   * and joins them with a forward slash (/)
+   * For anonymous tabsets, create a tabset name that alphabetizes the tabid fields and joins them with a forward slash (/)
    */
   generateAnonymousTabsetName = nodeData => {
     return nodeData.children
-      .map(child => child.argument[0].value.toLowerCase())
-      .sort((a, b) => {
-        if (a > b) return 1;
-        if (a < b) return -1;
-        return 0;
-      })
+      .map(child => getNestedValue(['options', 'tabid'], child))
+      .sort()
       .join('/');
   };
 
   sortTabset = (nodeData, referenceArray) => {
     return nodeData.children.sort((a, b) => {
-      let aValue = getNestedValue(['argument', 0, 'value'], a);
-      let bValue = getNestedValue(['argument', 0, 'value'], b);
-      if (aValue) aValue = aValue.toLowerCase();
-      if (bValue) bValue = bValue.toLowerCase();
+      const aValue = getNestedValue(['options', 'tabid'], a);
+      const bValue = getNestedValue(['options', 'tabid'], b);
       return referenceArray.indexOf(aValue) - referenceArray.indexOf(bValue);
     });
   };
@@ -62,9 +80,10 @@ export default class Tabs extends Component {
 
   render() {
     const { tabsetName } = this.state;
-    const { nodeData } = this.props;
+    const { nodeData, pillstrips } = this.props;
     const { activeTabs, setActiveTab } = this.context;
-    const isHeaderTabset = tabsetName === 'drivers' || tabsetName === 'cloud';
+    const isHeaderTabset =
+      tabsetName === 'drivers' || tabsetName === 'cloud' || Object.keys(pillstrips).includes(tabsetName);
     const isHidden = nodeData.options && nodeData.options.hidden;
     const tabs =
       tabsetName === 'platforms' || PLATFORMS.some(p => tabsetName.includes(p))
@@ -76,14 +95,14 @@ export default class Tabs extends Component {
         {isHeaderTabset || isHidden || (
           <ul className="tab-strip tab-strip--singleton" role="tablist">
             {tabs.map((tab, index) => {
-              let tabName = getNestedValue(['argument', 0, 'value'], tab);
-              if (tabName) tabName = tabName.toLowerCase();
+              const tabId = getNestedValue(['options', 'tabid'], tab);
+              const tabTitle = getNestedValue(['argument', 0, 'value'], tab) || stringifyTab(tabId);
               let ariaSelect = 'false';
-              if (activeTabs) ariaSelect = activeTabs[tabsetName] === tabName ? 'true' : 'false';
+              if (activeTabs) ariaSelect = activeTabs[tabsetName] === tabId ? 'true' : 'false';
               return (
                 <li
                   className="tab-strip__element"
-                  data-tabid={tabName}
+                  data-tabid={tabId}
                   role="tab"
                   aria-selected={ariaSelect}
                   key={index}
@@ -101,7 +120,7 @@ export default class Tabs extends Component {
                     const offset = initScrollY - initRect.top;
 
                     // Await for page to re-render after setting active tab
-                    await setActiveTab(tabsetName, tabName);
+                    await setActiveTab(tabsetName, tabId);
 
                     // Get the position of tab strip after re-render
                     const rects = element.getBoundingClientRect();
@@ -109,27 +128,26 @@ export default class Tabs extends Component {
                     // Reset the scroll position of the browser
                     window.scrollTo(rects.x, rects.top + offset);
                     reportAnalytics('Tab Selected', {
-                      tabId: tabName,
-                      title: stringifyTab(tabName),
+                      tabId,
+                      title: tabTitle,
                       tabSet: tabsetName,
                     });
                   }}
                 >
-                  {stringifyTab(tabName)}
+                  {tabTitle}
                 </li>
               );
             })}
           </ul>
         )}
         {tabs.map((tab, index) => {
-          let tabName = getNestedValue(['argument', 0, 'value'], tab);
-          if (tabName) tabName = tabName.toLowerCase();
+          const tabId = getNestedValue(['options', 'tabid'], tab);
 
           // If there are no activeTabs, js would typically be disabled
           const tabContent =
             !activeTabs || Object.getOwnPropertyNames(activeTabs).length === 0
               ? this.createFragment(tab, index)
-              : activeTabs[tabsetName] === tabName && this.createFragment(tab, index);
+              : activeTabs[tabsetName] === tabId && this.createFragment(tab, index);
 
           return tabContent;
         })}
@@ -139,15 +157,20 @@ export default class Tabs extends Component {
 }
 
 Tabs.propTypes = {
+  addPillstrip: PropTypes.func,
   nodeData: PropTypes.shape({
     children: PropTypes.arrayOf(
       PropTypes.shape({
         argument: PropTypes.arrayOf(
           PropTypes.shape({
-            value: PropTypes.string.isRequired,
+            value: PropTypes.string,
           })
         ).isRequired,
         children: PropTypes.array,
+        name: PropTypes.oneOf(['tab']),
+        options: PropTypes.shape({
+          tabid: PropTypes.string.isRequired,
+        }).isRequired,
       })
     ),
     options: PropTypes.shape({
@@ -155,10 +178,13 @@ Tabs.propTypes = {
     }),
   }).isRequired,
   addTabset: PropTypes.func,
+  pillstrips: PropTypes.objectOf(PropTypes.object),
 };
 
 Tabs.defaultProps = {
+  addPillstrip: () => {},
   addTabset: undefined,
+  pillstrips: {},
 };
 
 Tabs.contextType = TabContext;

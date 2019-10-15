@@ -4,7 +4,7 @@ import SiteMetadata from './site-metadata';
 import { TabContext } from './tab-context';
 import { findAllKeyValuePairs } from '../utils/find-all-key-value-pairs';
 import { getNestedValue } from '../utils/get-nested-value';
-import { setLocalValue } from '../utils/browser-storage';
+import { getLocalValue, setLocalValue } from '../utils/browser-storage';
 
 export default class DefaultLayout extends Component {
   constructor(props) {
@@ -13,28 +13,36 @@ export default class DefaultLayout extends Component {
     this.preprocessPageNodes();
 
     this.state = {
-      activeTabs: {},
+      activeTabs: undefined,
+      pillstrips: {},
     };
   }
 
+  componentDidMount() {
+    this.setState(prevState => ({ activeTabs: { ...getLocalValue('activeTabs'), ...prevState.activeTabs } }));
+  }
+
+  addPillstrip = (pillstripKey, pillstripVal) => {
+    this.setState(prevState => ({
+      pillstrips: {
+        ...prevState.pillstrips,
+        [pillstripKey]: pillstripVal,
+      },
+    }));
+  };
+
   preprocessPageNodes = () => {
-    const {
-      pageContext: { includes, __refDocMapping },
-    } = this.props;
-    const pageNodes = getNestedValue(['ast', 'children'], __refDocMapping) || [];
+    const { pageContext } = this.props;
+    const pageNodes = getNestedValue(['__refDocMapping', 'ast', 'children'], pageContext) || [];
 
-    // Map all substitutions that appear on the page and in its includes
-    this.substitutions = {
-      ...this.getSubstitutions(pageNodes),
-      ...this.getSubstitutions(Object.values(includes)),
-    };
+    // Map all substitutions that appear on the page
+    this.substitutions = this.getSubstitutions(pageNodes);
 
-    // Standardize cssclass nodes that appear on the page and in its includes
+    // Map all footnotes and their references that appear on the page
+    this.footnotes = this.getFootnotes(pageNodes);
+
+    // Standardize cssclass nodes that appear on the page
     this.normalizeCssClassNodes(pageNodes, 'name', 'cssclass');
-    Object.entries(includes).forEach(([, value]) => {
-      const node = getNestedValue(['ast', 'children'], value);
-      this.normalizeCssClassNodes(node, 'name', 'cssclass');
-    });
   };
 
   // Identify and save all substitutions as defined in the specified nodes
@@ -47,6 +55,54 @@ export default class DefaultLayout extends Component {
       map[sub.name] = sub.children; // eslint-disable-line no-param-reassign
       return map;
     }, {});
+  };
+
+  /*
+   * Identify the footnotes on a page and all footnote_reference nodes that refer to them
+   *
+   * Returns a map wherein each key is the footnote name, and each value is an object containing:
+   * - labels: the numerical label for the footnote
+   * - references: a list of the ids that refer to this footnote
+   */
+  getFootnotes = nodes => {
+    const footnotes = findAllKeyValuePairs(nodes, 'type', 'footnote');
+    return footnotes.reduce((map, footnote, index) => {
+      // Track how many anonymous footnotes are on the page so that we can correctly associate footnotes and references
+      let anonymousCount = 0;
+      if (footnote.name) {
+        // Find references associated with a named footnote
+        // eslint-disable-next-line no-param-reassign
+        map[footnote.name] = {
+          label: index + 1,
+          references: this.getNamedFootnoteReferences(nodes, footnote.name),
+        };
+      } else {
+        // Find references associated with an anonymous footnote
+        // eslint-disable-next-line no-param-reassign
+        map[footnote.id] = {
+          label: index + 1,
+          references: [this.getAnonymousFootnoteReferences(nodes, anonymousCount)],
+        };
+        anonymousCount += 1;
+      }
+      return map;
+    }, {});
+  };
+
+  // Find all footnote_reference nodes associated with a given footnote by their refname
+  getNamedFootnoteReferences = (nodes, refname) => {
+    const footnoteReferences = findAllKeyValuePairs(nodes, 'type', 'footnote_reference');
+    return footnoteReferences.filter(node => node.refname === refname).map(node => node.id);
+  };
+
+  // They are used infrequently, but here we match an anonymous footnote to its reference.
+  // The nth footnote on a page is associated with the nth reference on the page.
+  getAnonymousFootnoteReferences = (nodes, index) => {
+    const footnoteReferences = findAllKeyValuePairs(nodes, 'type', 'footnote_reference');
+    return getNestedValue(
+      [index, 'id'],
+      footnoteReferences.filter(node => !Object.prototype.hasOwnProperty.call(node, 'refname'))
+    );
   };
 
   // Modify the AST so that the node modified by cssclass is included in its "children" array.
@@ -73,22 +129,32 @@ export default class DefaultLayout extends Component {
     if (tabs && !tabs.includes(value)) {
       activeTab = tabs[0];
     }
-    this.setState(prevState => ({
-      activeTabs: {
-        ...prevState.activeTabs,
-        [tabsetName]: activeTab,
-      },
-    }));
-    setLocalValue(tabsetName, activeTab);
+    this.setState(
+      prevState => ({
+        activeTabs: {
+          ...prevState.activeTabs,
+          [tabsetName]: activeTab,
+        },
+      }),
+      () => {
+        setLocalValue('activeTabs', this.state.activeTabs); // eslint-disable-line react/destructuring-assignment
+      }
+    );
   };
 
   render() {
     const { children } = this.props;
+    const { pillstrips } = this.state;
 
     return (
       <TabContext.Provider value={{ ...this.state, setActiveTab: this.setActiveTab }}>
         <SiteMetadata />
-        {React.cloneElement(children, { substitutions: this.substitutions })}
+        {React.cloneElement(children, {
+          pillstrips,
+          addPillstrip: this.addPillstrip,
+          footnotes: this.footnotes,
+          substitutions: this.substitutions,
+        })}
       </TabContext.Provider>
     );
   }
@@ -102,6 +168,5 @@ DefaultLayout.propTypes = {
         children: PropTypes.arrayOf(PropTypes.object),
       }).isRequired,
     }).isRequired,
-    includes: PropTypes.objectOf(PropTypes.object),
   }).isRequired,
 };

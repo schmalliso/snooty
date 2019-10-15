@@ -25,8 +25,27 @@ import Text from './Text';
 import DefinitionList from './DefinitionList';
 import DefinitionListItem from './DefinitionListItem';
 import Transition from './Transition';
-import CssClass from './CssClass';
+import CSSClass from './CSSClass';
 import SubstitutionReference from './SubstitutionReference';
+import Line from './Line';
+import LineBlock from './LineBlock';
+import HorizontalList from './HorizontalList';
+import Contents from './Contents';
+import Container from './Container';
+import Cond from './Cond';
+import Meta from './Meta';
+import TabsPillstrip from './TabsPillstrip';
+import VersionChanged from './VersionChanged';
+import VersionAdded from './VersionAdded';
+import Deprecated from './Deprecated';
+import CardGroup from './CardGroup';
+import Footnote from './Footnote';
+import FootnoteReference from './FootnoteReference';
+import LiteralBlock from './LiteralBlock';
+import Topic from './Topic';
+import Subscript from './Subscript';
+import Superscript from './Superscript';
+import Image from './Image';
 
 import RoleApi from './Roles/Api';
 import RoleClass from './Roles/Class';
@@ -66,31 +85,51 @@ export default class ComponentFactory extends Component {
     this.componentMap = {
       admonition: Admonition,
       block_quote: BlockQuote,
+      'card-group': CardGroup,
+      class: CSSClass,
       code: Code,
-      class: CssClass,
-      cssclass: CssClass,
+      cond: Cond,
+      container: Container,
+      contents: Contents,
+      cssclass: CSSClass,
       definitionList: DefinitionList,
       definitionListItem: DefinitionListItem,
+      deprecated: Deprecated,
       emphasis: Emphasis,
       figure: Figure,
+      footnote: Footnote,
+      footnote_reference: FootnoteReference,
       heading: Heading,
+      hlist: HorizontalList,
+      image: Image,
       include: Include,
+      line: Line,
+      line_block: LineBlock,
       list: List,
       listItem: ListItem,
       'list-table': ListTable,
       literal: Literal,
+      literal_block: LiteralBlock,
       literalinclude: LiteralInclude,
+      meta: Meta,
+      only: Cond,
       paragraph: Paragraph,
       reference: Reference,
       section: Section,
       step: Step,
       strong: Strong,
+      subscript: Subscript,
       substitution_reference: SubstitutionReference,
+      superscript: Superscript,
       tabs: Tabs,
+      'tabs-pillstrip': TabsPillstrip,
       text: Text,
       title_reference: TitleReference,
+      topic: Topic,
       transition: Transition,
       uriwriter: URIWriter,
+      versionadded: VersionAdded,
+      versionchanged: VersionChanged,
     };
   }
 
@@ -136,6 +175,8 @@ export default class ComponentFactory extends Component {
   }
 
   render() {
+    const { nodeData } = this.props;
+    if (!nodeData) return null;
     return this.selectComponent();
   }
 }

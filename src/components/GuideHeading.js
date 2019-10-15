@@ -9,11 +9,7 @@ import { getNestedValue } from '../utils/get-nested-value';
 
 // TODO: Improve validation of template content
 const GuideHeading = ({ author, cloud, description, drivers, time, title, ...rest }) => {
-  const { activeTabs, setActiveTab } = useContext(TabContext);
-  const setActivePill = pillsetName => pill => {
-    setActiveTab(pillsetName, pill);
-  };
-
+  const { activeTabs } = useContext(TabContext);
   const displayTitle = getNestedValue(['children', 0, 'value'], title);
   const titleId = getNestedValue(['id'], title);
   const authorName = getNestedValue(['argument', 0, 'value'], author);
@@ -35,15 +31,12 @@ const GuideHeading = ({ author, cloud, description, drivers, time, title, ...res
         <div className="guide-prefs">
           <div className="guide-prefs__caption">
             Deployment Type:
-            <span className="show-current-deployment"> {stringifyTab(activeTabs.cloud)}</span>
+            <span className="show-current-deployment"> {stringifyTab(getNestedValue(['cloud'], activeTabs))}</span>
           </div>
           <Pills
             pills={cloud}
-            ulClass="pillstrip-declaration"
             liClass="guide__deploymentpill"
-            activePill={activeTabs.cloud}
             activeClass="guide__deploymentpill--active"
-            handleClick={setActivePill('cloud')}
             pillsetName="cloud"
             dataTabPreference="deployments"
           />
@@ -54,16 +47,9 @@ const GuideHeading = ({ author, cloud, description, drivers, time, title, ...res
         <div className="guide-prefs">
           <div className="guide-prefs__caption">
             Client:
-            <span className="show-current-language"> {stringifyTab(activeTabs.drivers)}</span>
+            <span className="show-current-language"> {stringifyTab(getNestedValue(['drivers'], activeTabs))}</span>
           </div>
-          <Pills
-            pills={drivers}
-            ulClass="pillstrip-declaration"
-            activePill={activeTabs.drivers}
-            handleClick={setActivePill('drivers')}
-            pillsetName="drivers"
-            dataTabPreference="languages"
-          />
+          <Pills pills={drivers} pillsetName="drivers" dataTabPreference="languages" />
         </div>
       )}
 

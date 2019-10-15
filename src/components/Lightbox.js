@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { withPrefix } from 'gatsby';
+import CaptionLegend from './CaptionLegend';
+import Image from './Image';
 import { getNestedValue } from '../utils/get-nested-value';
 
 const CAPTION_TEXT = 'click to enlarge';
 const isSvg = imgSrc => /\.svg$/.test(imgSrc);
 
-const Lightbox = ({ nodeData }) => {
+const Lightbox = ({ nodeData, base64Uri, ...rest }) => {
   const [showModal, setShowModal] = useState(false);
   const imgSrc = getNestedValue(['argument', 0, 'value'], nodeData);
-  const altText = getNestedValue(['options', 'alt'], nodeData) || imgSrc;
   const modal = useRef(null);
 
   const toggleShowModal = () => {
@@ -34,9 +34,10 @@ const Lightbox = ({ nodeData }) => {
     <React.Fragment>
       <div className="figure lightbox" style={{ width: getNestedValue(['options', 'figwidth'], nodeData) || 'auto' }}>
         <div className="lightbox__imageWrapper" onClick={toggleShowModal} role="button" tabIndex="-1">
-          <img src={withPrefix(imgSrc)} alt={altText} width="50%" />
+          <Image nodeData={nodeData} />
           <div className="lightbox__caption">{CAPTION_TEXT}</div>
         </div>
+        <CaptionLegend {...rest} nodeData={nodeData} />
       </div>
       {showModal && (
         <div
@@ -48,14 +49,11 @@ const Lightbox = ({ nodeData }) => {
           role="button"
           tabIndex="-1"
         >
-          <img
-            className={[
-              'lightbox__content',
-              'lightbox__content--activated',
-              isSvg(imgSrc) ? 'lightbox__content--scalable' : null,
-            ].join(' ')}
-            src={withPrefix(imgSrc)}
-            alt={`${altText} — Enlarged`}
+          <Image
+            nodeData={nodeData}
+            className={`lightbox__content lightbox__content--activated ${
+              isSvg(imgSrc) ? 'lightbox__content--scalable' : ''
+            }`}
           />
         </div>
       )}
@@ -74,6 +72,11 @@ Lightbox.propTypes = {
       alt: PropTypes.string,
     }).isRequired,
   }).isRequired,
+  base64Uri: PropTypes.string,
+};
+
+Lightbox.defaultProps = {
+  base64Uri: null,
 };
 
 export default Lightbox;
