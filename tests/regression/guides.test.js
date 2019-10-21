@@ -153,7 +153,7 @@ describe('with default tabs', () => {
       expect(newTOC).toEqual(cleanOldTOC(oldTOC));
     });
 
-    it.only(`links are the same`, async () => {
+    it(`links are the same`, async () => {
       const [oldLinks, newLinks] = await Promise.all([
         await getPageLinks(prodPage, prodUrl),
         await getPageLinks(localPage, localUrl),

@@ -10,8 +10,19 @@ const getGitBranch = () => {
 };
 
 const gatsbyPrefix = `${process.env.GATSBY_SITE}/${userInfo().username}/${getGitBranch()}`;
-export const prodUrl = `https://docs.mongodb.com/${process.env.GATSBY_SITE}/${process.env.PARSER_BRANCH}`;
+const baseUrl = 'https://docs.mongodb.com';
+export const defaultProdUrl = `${baseUrl}/${process.env.GATSBY_SITE}/${process.env.GATSBY_PARSER_BRANCH}`;
 export const localUrl = `http://127.0.0.1:9000/${gatsbyPrefix}`;
+
+export const getProdUrl = () => {
+  const site = process.env.GATSBY_SITE;
+  const branch = process.env.GATSBY_PARSER_BRANCH;
+  if (site === 'manual') {
+    const urlBranch = branch === 'master' ? 'manual' : branch;
+    return `${baseUrl}/${urlBranch}`;
+  }
+  return defaultProdUrl;
+};
 
 /*
  * Replace characters to standardize between the two builders.
