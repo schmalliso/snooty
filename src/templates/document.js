@@ -3,13 +3,17 @@ import PropTypes from 'prop-types';
 import ComponentFactory from '../components/ComponentFactory';
 import Footer from '../components/Footer';
 import { getNestedValue } from '../utils/get-nested-value';
+import { isPreviewMode } from '../utils/is-preview-mode';
 import Navbar from '../components/Navbar';
+import Breadcrumbs from '../components/Breadcrumbs';
+import TOCSidebar from '../components/TOCSidebar';
+import InternalPageNav from '../components/InternalPageNav';
 
 const Document = props => {
   const {
     addPillstrip,
     footnotes,
-    pageContext: { pageMetadata, __refDocMapping },
+    pageContext: { pageMetadata, parentPaths, slug, slugTitleMapping, toctree, toctreeOrder, __refDocMapping },
     pillstrips,
     substitutions,
   } = props;
@@ -19,6 +23,11 @@ const Document = props => {
     <React.Fragment>
       <Navbar />
       <div className="content">
+        {!isPreviewMode() && (
+          <div id="left-column">
+            <TOCSidebar toctreeData={toctree} />
+          </div>
+        )}
         <div id="main-column" className="main-column">
           <span className="showNav" id="showNav">
             Navigation
@@ -27,7 +36,7 @@ const Document = props => {
             <div className="documentwrapper">
               <div className="bodywrapper">
                 <div className="body">
-                  <div className="bc" />
+                  <Breadcrumbs parentPaths={parentPaths} slugTitleMapping={slugTitleMapping} />
                   {pageNodes.map((child, index) => (
                     <ComponentFactory
                       addPillstrip={addPillstrip}
@@ -40,6 +49,10 @@ const Document = props => {
                       substitutions={substitutions}
                     />
                   ))}
+
+                  {!isPreviewMode() && (
+                    <InternalPageNav slug={slug} slugTitleMapping={slugTitleMapping} toctreeOrder={toctreeOrder} />
+                  )}
                   <Footer />
                 </div>
               </div>
@@ -61,6 +74,13 @@ Document.propTypes = {
       }).isRequired,
     }).isRequired,
     pageMetadata: PropTypes.objectOf(PropTypes.object).isRequired,
+    parentPaths: PropTypes.arrayOf(PropTypes.string),
+    slug: PropTypes.string.isRequired,
+    slugTitleMapping: PropTypes.shape({
+      [PropTypes.string]: PropTypes.string,
+    }).isRequired,
+    toctree: PropTypes.object,
+    toctreeOrder: PropTypes.arrayOf(PropTypes.string).isRequired,
   }).isRequired,
   pillstrips: PropTypes.objectOf(PropTypes.object),
   substitutions: PropTypes.objectOf(PropTypes.array),

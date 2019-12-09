@@ -1,4 +1,4 @@
-import { slugArray } from '../../src/regressionTestSetup';
+import { slugArray } from '../regressionTestSetup';
 import { cleanString, getPageText, localUrl, getProdUrl } from './util';
 
 const prodUrl = getProdUrl();
