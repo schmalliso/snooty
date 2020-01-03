@@ -26,7 +26,6 @@ const Document = props => {
 
   return (
     <React.Fragment>
-      <Navbar />
       <div className="content">
         {!isPreviewMode() && (
           <div id="left-column">

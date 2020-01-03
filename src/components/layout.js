@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
+import { StaticQuery, graphql } from 'gatsby';
 import PropTypes from 'prop-types';
 import SiteMetadata from './site-metadata';
 import { TabContext } from './tab-context';
 import { findAllKeyValuePairs } from '../utils/find-all-key-value-pairs';
 import { getNestedValue } from '../utils/get-nested-value';
 import { getLocalValue, setLocalValue } from '../utils/browser-storage';
+import Nav from './Nav';
 
 export default class DefaultLayout extends Component {
   constructor(props) {
@@ -147,15 +149,44 @@ export default class DefaultLayout extends Component {
     const { pillstrips } = this.state;
 
     return (
-      <TabContext.Provider value={{ ...this.state, setActiveTab: this.setActiveTab }}>
-        <SiteMetadata />
-        {React.cloneElement(children, {
-          pillstrips,
-          addPillstrip: this.addPillstrip,
-          footnotes: this.footnotes,
-          substitutions: this.substitutions,
-        })}
-      </TabContext.Provider>
+      <StaticQuery
+        query={graphql`
+          query SiteTitleQuery {
+            site {
+              siteMetadata {
+                menuLinks {
+                  url
+                  text
+                  open
+                  children {
+                    url
+                    text
+                    open
+                    topNav
+                    textShort
+                    children {
+                      url
+                      text
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `}
+        render={data => (
+          <TabContext.Provider value={{ ...this.state, setActiveTab: this.setActiveTab }}>
+            <SiteMetadata />
+            <Nav menuLinks={data.site.siteMetadata.menuLinks} />
+            {React.cloneElement(children, {
+              pillstrips,
+              addPillstrip: this.addPillstrip,
+              footnotes: this.footnotes,
+              substitutions: this.substitutions,
+            })}
+          </TabContext.Provider>
+        )}
+      />
     );
   }
 }

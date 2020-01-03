@@ -148,7 +148,6 @@ export default class Guide extends Component {
 
     return (
       <React.Fragment>
-        <Navbar />
         <div className="content">
           <TOC
             activeSection={activeSection}
