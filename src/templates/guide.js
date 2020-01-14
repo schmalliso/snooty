@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import TOC from '../components/TOC';
+import GuidesTOC from '../components/GuidesTOC';
 import ComponentFactory from '../components/ComponentFactory';
 import Footer from '../components/Footer';
 import GuideBreadcrumbs from '../components/GuideBreadcrumbs';
@@ -8,9 +8,9 @@ import GuideSection from '../components/GuideSection';
 import GuideHeading from '../components/GuideHeading';
 import Widgets from '../components/Widgets/Widgets';
 import { LANGUAGES, DEPLOYMENTS, SECTION_NAME_MAPPING } from '../constants';
-import { findKeyValuePair } from '../utils/find-key-value-pair';
 import { throttle } from '../utils/throttle';
 import { getNestedValue } from '../utils/get-nested-value';
+import { isPreviewMode } from '../utils/is-preview-mode';
 import { TabContext } from '../components/tab-context';
 import Navbar from '../components/Navbar';
 
@@ -22,7 +22,6 @@ export default class Guide extends Component {
       pageContext: { __refDocMapping },
     } = this.props;
 
-    // get data from server
     this.sections = getNestedValue(['ast', 'children', 0, 'children'], __refDocMapping);
     this.bodySections = this.sections.filter(section => Object.keys(SECTION_NAME_MAPPING).includes(section.name));
 
@@ -32,7 +31,6 @@ export default class Guide extends Component {
     };
 
     this.sectionRefs = this.bodySections.map(() => React.createRef());
-    this.namedTabsets = new Set();
   }
 
   componentDidMount() {
@@ -136,43 +134,46 @@ export default class Guide extends Component {
           refDocMapping={getNestedValue(['__refDocMapping'], pageContext) || {}}
           addTabset={this.addGuidesTabset}
           pillstrips={pillstrips}
+          slugTitleMapping={getNestedValue(['metadata', 'slugToTitle'], pageContext)}
         />
       );
     });
   }
 
   render() {
-    const { pageContext, path } = this.props;
+    const {
+      pageContext: { guidesMetadata, metadata, slug, snootyStitchId, __refDocMapping },
+    } = this.props;
     const { activeSection, cloud, drivers } = this.state;
-    const pageSlug = path.substr(1);
 
     return (
       <React.Fragment>
         <Navbar />
         <div className="content">
-          <TOC
-            activeSection={activeSection}
-            sectionKeys={this.bodySections.map(section => section.name)}
-            disableScrollable={this.disableScrollable}
-          />
+          {!isPreviewMode() && (
+            <GuidesTOC
+              activeSection={activeSection}
+              sectionKeys={this.bodySections.map(section => section.name)}
+              disableScrollable={this.disableScrollable}
+            />
+          )}
           <div className="left-nav-space" />
           <div id="main-column" className="main-column">
-            <div className="body" data-pagename={pageSlug}>
+            <div className="body" data-pagename={slug}>
               <GuideBreadcrumbs />
+
               <GuideHeading
-                author={findKeyValuePair(this.sections, 'name', 'author')}
+                {...guidesMetadata[slug]}
                 cloud={cloud}
-                description={findKeyValuePair(this.sections, 'name', 'result_description')}
                 drivers={drivers}
-                refDocMapping={getNestedValue(['__refDocMapping'], pageContext) || {}}
-                time={findKeyValuePair(this.sections, 'name', 'time')}
-                title={findKeyValuePair(this.sections, 'type', 'heading')}
+                refDocMapping={__refDocMapping || {}}
+                slugTitleMapping={getNestedValue(['slugToTitle'], metadata)}
               />
               {this.createSections()}
               <Footer />
             </div>
           </div>
-          {!process.env.PREVIEW_PAGE && <Widgets guideName={pageSlug} snootyStitchId={pageContext.snootyStitchId} />}
+          {!process.env.PREVIEW_PAGE && <Widgets guideName={slug} snootyStitchId={snootyStitchId} />}
         </div>
       </React.Fragment>
     );
@@ -182,6 +183,9 @@ export default class Guide extends Component {
 Guide.propTypes = {
   addPillstrip: PropTypes.func,
   pageContext: PropTypes.shape({
+    guidesMetadata: PropTypes.shape({
+      [PropTypes.string]: PropTypes.object,
+    }),
     __refDocMapping: PropTypes.shape({
       ast: PropTypes.shape({
         children: PropTypes.array,
@@ -189,7 +193,6 @@ Guide.propTypes = {
     }).isRequired,
     snootyStitchId: PropTypes.string.isRequired,
   }).isRequired,
-  path: PropTypes.string.isRequired,
   pillstrips: PropTypes.objectOf(PropTypes.object),
 };
 

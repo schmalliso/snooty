@@ -92,6 +92,10 @@ export const SECTION_NAME_MAPPING = {
     id: 'procedure',
     title: 'Procedure',
   },
+  verify: {
+    id: 'verify',
+    title: 'Verify',
+  },
   summary: { id: 'summary', title: 'Summary' },
   whats_next: {
     id: 'what-s-next',

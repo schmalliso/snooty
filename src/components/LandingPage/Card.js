@@ -67,7 +67,7 @@ Card.propTypes = {
 
 Card.defaultProps = {
   refDoc: undefined,
-  time: undefined,
+  completionTime: undefined,
 };
 
 export default Card;

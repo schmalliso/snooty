@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { SECTION_NAME_MAPPING } from '../constants';
 
-const TOC = ({ activeSection, sectionKeys, disableScrollable }) => (
+const GuidesTOC = ({ activeSection, sectionKeys, disableScrollable }) => (
   <aside className="left-toc hide-first-toc-level">
     <div className="left-toc__title">Overview:</div>
     <ul>
@@ -27,15 +27,15 @@ const TOC = ({ activeSection, sectionKeys, disableScrollable }) => (
   </aside>
 );
 
-TOC.propTypes = {
+GuidesTOC.propTypes = {
   activeSection: PropTypes.string,
   sectionKeys: PropTypes.arrayOf(PropTypes.string).isRequired,
   disableScrollable: PropTypes.func,
 };
 
-TOC.defaultProps = {
+GuidesTOC.defaultProps = {
   activeSection: undefined,
   disableScrollable: () => {},
 };
 
-export default TOC;
+export default GuidesTOC;

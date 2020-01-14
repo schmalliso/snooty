@@ -6,22 +6,18 @@ import Pills from './Pills';
 import { TabContext } from './tab-context';
 import { stringifyTab } from '../constants';
 import { getNestedValue } from '../utils/get-nested-value';
+import { makeId } from '../utils/make-id';
 
-// TODO: Improve validation of template content
-const GuideHeading = ({ author, cloud, description, drivers, time, title, ...rest }) => {
+const GuideHeading = ({ author, cloud, description, drivers, completionTime, title, titleId, ...rest }) => {
   const { activeTabs } = useContext(TabContext);
-  const displayTitle = getNestedValue(['children', 0, 'value'], title);
-  const titleId = getNestedValue(['id'], title);
-  const authorName = getNestedValue(['argument', 0, 'value'], author);
   const descriptionChildren = getNestedValue(['children'], description);
-  const timeLength = getNestedValue(['argument', 0, 'value'], time);
   return (
     <div className="section">
       <Helmet>
-        <title>{displayTitle}</title>
+        <title>{title}</title>
       </Helmet>
-      <h1 id={titleId}>
-        {displayTitle}
+      <h1 id={titleId || makeId(title)}>
+        {title}
         <a className="headerlink" href={`#${titleId}`} title="Permalink to this headline">
           ¶
         </a>
@@ -55,7 +51,7 @@ const GuideHeading = ({ author, cloud, description, drivers, time, title, ...res
 
       <hr />
 
-      {authorName && <p>Author: {authorName}</p>}
+      {author && <p>Author: {author}</p>}
       {descriptionChildren && (
         <section>
           {descriptionChildren.map((element, index) => (
@@ -63,9 +59,9 @@ const GuideHeading = ({ author, cloud, description, drivers, time, title, ...res
           ))}
         </section>
       )}
-      {timeLength && (
+      {completionTime && (
         <p>
-          <em>Time required: {timeLength} minutes</em>
+          <em>Time required: {completionTime} minutes</em>
         </p>
       )}
     </div>
@@ -73,32 +69,15 @@ const GuideHeading = ({ author, cloud, description, drivers, time, title, ...res
 };
 
 GuideHeading.propTypes = {
-  author: PropTypes.shape({
-    argument: PropTypes.arrayOf(
-      PropTypes.shape({
-        value: PropTypes.string,
-      })
-    ).isRequired,
-  }).isRequired,
+  author: PropTypes.string.isRequired,
   cloud: PropTypes.arrayOf(PropTypes.string),
+  completionTime: PropTypes.string.isRequired,
   description: PropTypes.shape({
     children: PropTypes.arrayOf(PropTypes.object),
   }).isRequired,
   drivers: PropTypes.arrayOf(PropTypes.string),
-  time: PropTypes.shape({
-    argument: PropTypes.arrayOf(
-      PropTypes.shape({
-        value: PropTypes.string,
-      })
-    ).isRequired,
-  }).isRequired,
-  title: PropTypes.shape({
-    children: PropTypes.arrayOf(
-      PropTypes.shape({
-        value: PropTypes.string,
-      })
-    ).isRequired,
-  }).isRequired,
+  title: PropTypes.string.isRequired,
+  titleId: PropTypes.string,
 };
 
 GuideHeading.defaultProps = {
