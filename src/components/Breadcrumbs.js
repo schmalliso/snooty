@@ -13,8 +13,6 @@ const Breadcrumbs = ({ parentPaths, slugTitleMapping }) => (
           const title = getNestedValue([path], slugTitleMapping);
           return (
             <li key={path}>
-              {/* TODO: Replace <a> with <Link> when back button behavior is fixed for the component.
-              GitHub issue: https://github.com/gatsbyjs/gatsby/issues/8357 */}
               <Link to={path}>{formatText(title)}</Link>
               {index !== parentPaths.length - 1 && <span className="bcpoint"> &gt; </span>}
             </li>

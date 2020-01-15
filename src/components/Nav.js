@@ -1,9 +1,11 @@
 import React, { Component } from 'react';
-// import { MarianUI } from './Marian.js';
-import NavbarDropdown from './NavbarDropdown';
 import PropTypes from 'prop-types';
 // import Velocity from 'velocity-animate';
 import classNames from 'classnames';
+import { isBrowser } from '../utils/is-browser';
+import Link from './Link';
+// import { MarianUI } from './Marian.js';
+import NavbarDropdown from './NavbarDropdown';
 
 // PM has asked that we not use the download arrow anymore, so commenting this out.
 // function DownloadArrowIcon() {
@@ -191,9 +193,9 @@ export default class Nav extends Component {
 
       return (
         <div className="navbar-download">
-          <a href={linkUrl} className="navbar-download__text">
+          <Link to={linkUrl} className="navbar-download__text">
             {linkText}
-          </a>
+          </Link>
           {linkIcon}
         </div>
       );
@@ -202,15 +204,17 @@ export default class Nav extends Component {
     const linkElements = this.props.menuLinks[1].children
       .filter(link => link.topNav)
       .map((link, i) => {
+        const isActive = () => link.childSlugs.some(slug => slug === process.env.GATSBY_SITE);
+
         const linkClass = classNames({
           'navbar-links__item': true,
-          'navbar-links__item--active': link.active,
+          'navbar-links__item--active': isActive(),
         });
 
         return (
-          <a href={link.url} key={i} className={linkClass}>
+          <Link to={link.url} key={i} className={linkClass}>
             {link.textShort || link.text}
-          </a>
+          </Link>
         );
       });
 

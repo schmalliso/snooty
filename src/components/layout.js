@@ -164,6 +164,7 @@ export default class DefaultLayout extends Component {
                     open
                     topNav
                     textShort
+                    childSlugs
                     children {
                       url
                       text

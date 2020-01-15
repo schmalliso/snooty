@@ -107,8 +107,8 @@ export const ADMONITIONS = ['admonition', 'example', 'important', 'note', 'seeal
 
 export const URL_SLUGS = {
   server: ['manual', 'master', 'v3.6', 'v3.4', 'v3.2', 'v3.0', 'v2.6', 'v2.4', 'v2.2'],
-  drivers: ['ecosystem', 'ruby-driver', 'mongoid'],
-  cloud: ['cloud', 'stitch'],
+  drivers: ['ecosystem', 'ruby-driver', 'mongoid', 'php-library'],
+  cloud: ['cloud', 'stitch', 'realm'],
   tools: ['tools', 'bi-connector', 'charts', 'compass', 'kubernetes-operator', 'spark-connector'],
   guides: ['guides'],
 };

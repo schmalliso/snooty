@@ -43,6 +43,7 @@ module.exports = {
             text: 'MongoDB Server',
             textShort: 'Server',
             topNav: true,
+            childSlugs: ['manual'],
           },
           {
             url: 'https://docs.mongodb.com/stitch/',
@@ -54,6 +55,7 @@ module.exports = {
             text: 'Drivers',
             open: false,
             topNav: true,
+            childSlugs: ['ecosystem', 'node', 'ruby-driver', 'mongoid', 'php-library'],
             children: [
               {
                 url: 'http://mongoc.org/libmongoc/current/',
@@ -91,7 +93,10 @@ module.exports = {
                 url: 'https://docs.mongodb.com/ecosystem/drivers/ruby/',
                 text: 'Ruby',
               },
-              { url: 'https://docs.mongodb.com/ecosystem/drivers/scala/', text: 'Scala' },
+              {
+                url: 'https://docs.mongodb.com/ecosystem/drivers/scala/',
+                text: 'Scala',
+              },
             ],
           },
           {
@@ -99,8 +104,12 @@ module.exports = {
             text: 'Cloud',
             open: true,
             topNav: true,
+            childSlugs: ['mms', 'cloud', 'stitch', 'realm'],
             children: [
-              { url: 'https://docs.atlas.mongodb.com/', text: 'MongoDB Atlas' },
+              {
+                url: 'https://docs.atlas.mongodb.com/',
+                text: 'MongoDB Atlas',
+              },
               {
                 url: 'https://docs.cloudmanager.mongodb.com/',
                 text: 'MongoDB Cloud Manager',
@@ -116,6 +125,7 @@ module.exports = {
             text: 'Tools',
             open: true,
             topNav: true,
+            childSlugs: ['bi-connector', 'charts', 'compass', 'kubernetes-operator', 'spark-connector'],
             children: [
               {
                 url: 'https://docs.mongodb.com/atlas-open-service-broker/current/',
@@ -151,6 +161,7 @@ module.exports = {
             url: 'https://docs.mongodb.com/guides/',
             text: 'Guides',
             topNav: true,
+            childSlugs: ['guides'],
           },
         ],
       },
@@ -158,12 +169,18 @@ module.exports = {
         url: 'https://www.mongodb.com/',
         text: 'Company',
       },
-      { url: 'https://university.mongodb.com/', text: 'Learn' },
+      {
+        url: 'https://university.mongodb.com/',
+        text: 'Learn',
+      },
       {
         url: 'https://www.mongodb.com/community',
         text: 'Community',
       },
-      { url: 'https://www.mongodb.com/what-is-mongodb', text: 'What is MongoDB' },
+      {
+        url: 'https://www.mongodb.com/what-is-mongodb',
+        text: 'What is MongoDB',
+      },
       {
         url: 'https://www.mongodb.com/download-center?jmp=docs',
         text: 'Get MongoDB',
