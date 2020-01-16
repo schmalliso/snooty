@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import Menu from './Menu';
 import Submenu from './Submenu';
-import classNames from 'classnames';
 
 export default class NavbarDropdown extends Component {
   constructor(props) {

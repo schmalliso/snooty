@@ -2,8 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 // import Velocity from 'velocity-animate';
 import classNames from 'classnames';
-import { isBrowser } from '../utils/is-browser';
-import Link from './Link';
+import Link from '../Link';
 // import { MarianUI } from './Marian.js';
 import NavbarDropdown from './NavbarDropdown';
 
@@ -32,7 +31,7 @@ const RocketDownloadIcon = () => {
   );
 };
 
-export default class Nav extends Component {
+export default class Navbar extends Component {
   constructor(props) {
     super(props);
     // this.state = JSON.parse(props.navprops);
@@ -241,6 +240,6 @@ export default class Nav extends Component {
   }
 }
 
-Nav.propTypes = {
+Navbar.propTypes = {
   navprops: PropTypes.objectOf(PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string))),
 };
