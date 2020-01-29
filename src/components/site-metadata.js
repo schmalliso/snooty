@@ -4,14 +4,14 @@ import { Helmet } from 'react-helmet';
 import { useSiteMetadata } from 'useSiteMetadata'; // Alias in webpack.config
 
 const SiteMetadata = () => {
-  const { branch, project, title } = useSiteMetadata();
+  const { parserBranch, project, title } = useSiteMetadata();
   return (
     <Helmet
       defaultTitle={title}
       bodyAttributes={{
         'data-project': project,
         'data-project-title': title,
-        'data-branch': branch,
+        'data-branch': parserBranch,
         'data-enable-marian': 1,
       }}
     />

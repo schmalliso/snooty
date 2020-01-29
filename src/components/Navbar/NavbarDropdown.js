@@ -41,7 +41,7 @@ export default class NavbarDropdown extends Component {
         <div className={menuClass}>
           <Menu>
             {this.props.links.map((link, index) => (
-              <li className="menu__item">
+              <li className="menu__item" key={index}>
                 {link.children && link.children.length > 0 ? <Submenu {...link} /> : <a href={link.url}>{link.text}</a>}
               </li>
             ))}

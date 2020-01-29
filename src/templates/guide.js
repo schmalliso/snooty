@@ -12,7 +12,6 @@ import { findKeyValuePair } from '../utils/find-key-value-pair';
 import { throttle } from '../utils/throttle';
 import { getNestedValue } from '../utils/get-nested-value';
 import { TabContext } from '../components/tab-context';
-import Navbar from '../components/Navbar';
 
 export default class Guide extends Component {
   constructor(propsFromServer) {

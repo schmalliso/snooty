@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
+import Link from '../Link';
+
 // This does NOT include guides landing: we need a new design for how that
 // should look
 const setupAdapters = {
@@ -16,6 +19,8 @@ const setupAdapters = {
   },
 };
 
+const decodeUrlParameter = uri => decodeURIComponent(uri.replace(/\+/g, '%20'));
+
 const getSetupAdapter = () => {
   const property = document.body.getAttribute('data-project');
   if (property === 'landing' || property === 'guides') {
@@ -25,46 +30,33 @@ const getSetupAdapter = () => {
   return setupAdapters.manual;
 };
 
-const decodeUrlParameter = uri => decodeURIComponent(uri.replace(/\+/g, '%20'));
+const generateQueryParams = (property, query = null) => {
+  return `?searchProperty=${encodeURIComponent(property)}&query=${encodeURIComponent(query)}`;
+};
 
-class TabStrip {
-  constructor(initialSelection, tabs, onclick) {
-    this.tabs = tabs;
-    this.element = document.createElement('ul');
-    this.element.className = 'tab-strip';
-    this.element.role = 'tablist';
+class TabStrip extends Component {
+  onClick = tab => {
+    const { onClick } = this.props;
+    onClick(tab);
+  };
 
-    tabs.forEach(tab => {
-      const tabElement = document.createElement('li');
-      tabElement.role = 'tab';
-      tabElement.className = 'tab-strip__element';
-      tabElement.innerText = tab.label;
-      tabElement.onclick = onclick.bind(null, tab);
-
-      this.element.appendChild(tabElement);
-      tab.element = tabElement;
-    });
-    const tabsReact = (
+  render() {
+    const { activeTab, tabs } = this.props;
+    return (
       <ul className="tab-strip" role="tablist">
-        {tabs.map((tab, index) => (
-          <li className="tab-strip__element" role="tab" onClick={onclick.bind(null, tab)}>
+        {tabs.map(tab => (
+          <li
+            aria-selected={tab.id === activeTab}
+            key={tab.label}
+            className="tab-strip__element"
+            role="tab"
+            onClick={() => this.onClick(tab)}
+          >
             {tab.label}
           </li>
         ))}
       </ul>
     );
-
-    this.update(initialSelection);
-  }
-
-  update(selectedId) {
-    this.tabs.forEach(tab => {
-      if (tab.id === selectedId) {
-        tab.element.setAttribute('aria-selected', true);
-      } else {
-        tab.element.setAttribute('aria-selected', false);
-      }
-    });
   }
 }
 
@@ -135,194 +127,197 @@ export class Marian {
   }
 }
 
-export class MarianUI {
-  constructor(defaultProperties, defaultPropertiesLabel, onchangequery) {
-    this.marian = new Marian(this.render.bind(this), this.renderError.bind(this));
-
-    this.defaultProperties = defaultProperties;
-    this.onchangequery = onchangequery;
-
-    this.container = document.createElement('div');
-    this.container.className = 'marian';
-
-    this.spinnerElement = document.createElement('div');
-    this.spinnerElement.className = 'spinner';
-
-    this.query = '';
-    this.searchProperty = '';
+export class MarianUI extends Component {
+  constructor(props) {
+    super(props);
+    const { defaultPropertiesLabel } = this.props;
 
     // We have three options to search: the current site, the current MongoDB manual,
     // and all properties.
-    const tabStripElements = [];
+    this.tabStripElements = [];
+    let searchProperty = '';
     if (defaultPropertiesLabel) {
-      tabStripElements.push({ id: 'current', label: `${defaultPropertiesLabel}` });
+      this.tabStripElements.push({ id: 'current', label: `${defaultPropertiesLabel}` });
 
-      if (!this.searchProperty) {
-        this.searchProperty = 'current';
+      if (!searchProperty) {
+        searchProperty = 'current';
       }
     }
 
     if (!defaultPropertiesLabel || !defaultPropertiesLabel.match(/^MongoDB Manual/)) {
-      tabStripElements.push({ id: 'manual', label: 'MongoDB Manual' });
+      this.tabStripElements.push({ id: 'manual', label: 'MongoDB Manual' });
 
-      if (!this.searchProperty) {
-        this.searchProperty = 'manual';
+      if (!searchProperty) {
+        searchProperty = 'manual';
       }
     }
 
-    tabStripElements.push({ id: 'all', label: 'All Results' });
+    this.tabStripElements.push({ id: 'all', label: 'All Results' });
 
-    this.tabStrip = new TabStrip(this.searchProperty, tabStripElements, tab => {
-      this.tabStrip.update(tab.id);
-      this.searchProperty = tab.id;
-      this.search(this.query);
-    });
+    this.state = {
+      searchProperty,
+      error: false,
+      results: [],
+      spellingCorrections: {},
+    };
 
-    const titleElement = document.createElement('div');
-    titleElement.className = 'marian__heading';
-    titleElement.innerText = 'Search Results';
-
-    this.listElement = document.createElement('ul');
-    this.listElement.className = 'marian-results';
-    this.container.appendChild(titleElement);
-    this.container.appendChild(this.tabStrip.element);
-    this.container.appendChild(this.spinnerElement);
-    this.container.appendChild(this.listElement);
-
-    this.query = this.parseUrl();
-
-    // The element containg page content to show/hide when hiding/showing
-    // the search panel.
-    this.pageContentElement = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const adapter = getSetupAdapter();
-      const rootElement = document.querySelector(adapter.rootElementSelector);
-      const pageContentCandidate = document.querySelector(adapter.pageContentSelector);
-      if (rootElement !== null && pageContentCandidate !== null) {
-        this.pageContentElement = pageContentCandidate;
-        rootElement.appendChild(this.container);
-      } else if (!this.pageContentElement) {
-        // If we can't find a page body, just use a dummy element
-        this.pageContentElement = document.createElement('div');
-      }
-
-      this.search(this.query);
-    });
+    this.marian = new Marian(this.onSuccess, this.onError);
   }
 
-  pushHistory() {
+  componentDidMount() {
+    // Identify where the search results will be rendered on the page
+    this.pageContentElement = null;
+    const adapter = getSetupAdapter();
+    this.rootElement = document.querySelector(adapter.rootElementSelector);
+    const pageContentCandidate = document.querySelector(adapter.pageContentSelector);
+    if (this.rootElement !== null && pageContentCandidate !== null) {
+      this.pageContentElement = pageContentCandidate;
+    } else if (!this.pageContentElement) {
+      // If we can't find a page body, just use a dummy element
+      this.pageContentElement = document.createElement('div');
+    }
+
+    this.props.onChangeQuery(this.parseUrl());
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.query !== prevProps.query) {
+      if (this.props.query !== '') {
+        this.search();
+        this.toggleContentVisibility(false);
+      } else {
+        this.toggleContentVisibility(true);
+      }
+    }
+  }
+
+  componentWillUnmount() {
+    this.toggleContentVisibility(true);
+  }
+
+  toggleContentVisibility = showContent => {
+    // Show/hide page content
+    if (showContent) {
+      this.pageContentElement.style.removeProperty('display');
+    } else {
+      this.pageContentElement.style.display = 'none';
+    }
+  };
+
+  pushHistory = () => {
+    const { query } = this.props;
     const locationSansQuery = window.location.href.replace(/\?[^#]*/, '');
 
-    let newURL = '';
-    if (this.query) {
-      newURL = `${locationSansQuery}?searchProperty=${encodeURIComponent(
-        this.searchProperty
-      )}&query=${encodeURIComponent(this.query)}`;
+    let newUrl = '';
+    if (query) {
+      newUrl = `${locationSansQuery}${generateQueryParams(this.state.searchProperty, query)}`;
     } else {
-      newURL = window.location.href;
+      newUrl = window.location.href;
     }
 
     // Only replaceState when changing query in URL, otherwise pushState
-    if (newURL.indexOf('&query=') >= 0 && window.location.href.indexOf('&query=') >= 0) {
-      window.history.replaceState({ href: newURL }, null, newURL);
-    } else if (newURL !== window.location.href) {
-      window.history.pushState({ href: newURL }, null, newURL);
+    if (newUrl.indexOf('&query=') >= 0 && window.location.href.indexOf('&query=') >= 0) {
+      window.history.replaceState({ href: newUrl }, null, newUrl);
+    } else if (newUrl !== window.location.href) {
+      window.history.pushState({ href: newUrl }, null, newUrl);
     }
+  };
+
+  search() {
+    const { defaultProperties, query } = this.props;
+    this.pushHistory();
+
+    let search = '';
+    if (defaultProperties.length && this.state.searchProperty === 'current') {
+      search = defaultProperties;
+    } else if (this.state.searchProperty === 'manual') {
+      search = 'manual-current';
+    }
+
+    this.marian.search(query, search);
   }
 
-  parseUrl() {
+  parseUrl = () => {
     let locationSearchProperty = window.location.search.match(/searchProperty=([^&#]*)/);
     locationSearchProperty = locationSearchProperty !== null ? decodeUrlParameter(locationSearchProperty[1]) : '';
     if (locationSearchProperty) {
-      this.searchProperty = locationSearchProperty;
-      this.tabStrip.update(this.searchProperty);
+      this.setState({ searchProperty: locationSearchProperty });
     }
 
     const locationQuery = window.location.search.match(/query=([^&#]*)/);
     return locationQuery !== null ? decodeUrlParameter(locationQuery[1]) : '';
-  }
+  };
 
-  show() {
-    this.container.className = 'marian marian--shown';
-    this.pageContentElement.style.display = 'none';
-  }
+  updateSearchProperty = tab => {
+    // When user clicks on tab, update the property being searched
+    this.setState(
+      {
+        searchProperty: tab.id,
+      },
+      () => {
+        this.search();
+      }
+    );
+  };
 
-  hide() {
-    this.container.className = 'marian';
-    this.pageContentElement.style.removeProperty('display');
-  }
+  onSuccess = data => {
+    this.setState({ error: false, ...data });
+  };
 
-  search(query) {
-    this.query = query;
-    this.pushHistory();
+  onError = message => {
+    this.setState({ error: message });
+  };
+
+  render() {
+    const { query } = this.props;
+    const { error, results, searchProperty, spellingCorrections } = this.state;
+
+    const loading = Object.keys(spellingCorrections).length === 0 && results.length === 0 && !error;
+    const pathSansQuery = window.location.pathname.replace(/\?[^#]*/, '');
+    const spellingSuggestion = () =>
+      Object.entries(spellingCorrections).map(([err, correction]) => (
+        <li className="marian-result" key={err}>
+          <Link
+            to={`${pathSansQuery}${generateQueryParams(searchProperty, correction)}`}
+            className="marian-spelling-correction"
+          >
+            Did you mean: {correction}
+          </Link>
+        </li>
+      ));
+
     if (!query) {
-      this.listElement.innerText = '';
-      this.hide();
-      return;
+      return null;
     }
 
-    this.show();
-
-    let searchProperty = '';
-    if (this.defaultProperties.length && this.searchProperty === 'current') {
-      searchProperty = this.defaultProperties;
-    } else if (this.searchProperty === 'manual') {
-      searchProperty = 'manual-current';
+    let resultList;
+    if (error) {
+      resultList = <li className="marian-result">{error}</li>;
+    } else if (Object.keys(spellingCorrections).length > 0) {
+      resultList = spellingSuggestion();
+    } else {
+      resultList = (
+        <React.Fragment>
+          {results.map(result => (
+            <li className="marian-result" key={result.title}>
+              <Link to={result.url} className="marian-title">
+                {result.title}
+              </Link>
+              <div className="marian-preview">{result.preview}</div>
+            </li>
+          ))}
+        </React.Fragment>
+      );
     }
 
-    this.listElement.innerText = '';
-    this.spinnerElement.className = 'spinner';
-    this.marian.search(query, searchProperty);
-  }
-
-  render(data, query) {
-    this.spinnerElement.className = 'spinner spinner--hidden';
-
-    const spellingErrors = Object.keys(data.spellingCorrections);
-    if (spellingErrors.length > 0) {
-      let corrected = query;
-      spellingErrors.forEach(orig => {
-        corrected = corrected.replace(orig, data.spellingCorrections[orig]);
-      });
-
-      const li = document.createElement('li');
-      const correctLink = document.createElement('a');
-      correctLink.onclick = () => {
-        this.onchangequery(corrected);
-      };
-      li.className = 'marian-result';
-      correctLink.className = 'marian-spelling-correction';
-      correctLink.innerText = `Did you mean: ${corrected}`;
-      li.appendChild(correctLink);
-      this.listElement.appendChild(li);
-    }
-
-    data.results.forEach(result => {
-      const li = document.createElement('li');
-      li.className = 'marian-result';
-
-      const titleLink = document.createElement('a');
-      titleLink.innerText = result.title;
-      titleLink.className = 'marian-title';
-      titleLink.href = result.url;
-
-      const previewElement = document.createElement('div');
-      previewElement.innerText = result.preview;
-      previewElement.className = 'marian-preview';
-
-      li.appendChild(titleLink);
-      li.appendChild(previewElement);
-      this.listElement.appendChild(li);
-    });
-  }
-
-  renderError(message) {
-    this.spinnerElement.className = 'spinner spinner--hidden';
-
-    const li = document.createElement('li');
-    li.className = 'marian-result';
-    li.innerText = message;
-    this.listElement.appendChild(li);
+    return ReactDOM.createPortal(
+      <div className="marian marian--shown">
+        <div className="marian__heading">Search Results</div>
+        <TabStrip activeTab={searchProperty} tabs={this.tabStripElements} onClick={this.updateSearchProperty} />
+        {loading && <div className="spinner"></div>}
+        <ul className="marian-results">{resultList}</ul>
+      </div>,
+      this.rootElement
+    );
   }
 }

@@ -6,7 +6,7 @@ import { TabContext } from './tab-context';
 import { findAllKeyValuePairs } from '../utils/find-all-key-value-pairs';
 import { getNestedValue } from '../utils/get-nested-value';
 import { getLocalValue, setLocalValue } from '../utils/browser-storage';
-import Nav from './Nav';
+import Navbar from './Navbar';
 
 export default class DefaultLayout extends Component {
   constructor(props) {
@@ -145,7 +145,10 @@ export default class DefaultLayout extends Component {
   };
 
   render() {
-    const { children } = this.props;
+    const {
+      children,
+      pageContext: { slug },
+    } = this.props;
     const { pillstrips } = this.state;
 
     return (
@@ -178,7 +181,7 @@ export default class DefaultLayout extends Component {
         render={data => (
           <TabContext.Provider value={{ ...this.state, setActiveTab: this.setActiveTab }}>
             <SiteMetadata />
-            <Nav menuLinks={data.site.siteMetadata.menuLinks} />
+            <Navbar menuLinks={data.site.siteMetadata.menuLinks} slug={slug} />
             {React.cloneElement(children, {
               pillstrips,
               addPillstrip: this.addPillstrip,
@@ -195,6 +198,7 @@ export default class DefaultLayout extends Component {
 DefaultLayout.propTypes = {
   children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]).isRequired,
   pageContext: PropTypes.shape({
+    slug: PropTypes.string.isRequired,
     __refDocMapping: PropTypes.shape({
       ast: PropTypes.shape({
         children: PropTypes.arrayOf(PropTypes.object),

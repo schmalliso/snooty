@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import LandingPageCards from '../components/LandingPage/LandingPageCards';
 import { findKeyValuePair } from '../utils/find-key-value-pair';
 import { getNestedValue } from '../utils/get-nested-value';
-import Navbar from '../components/Navbar';
 
 const Index = ({ pageContext: { guidesMetadata, __refDocMapping } }) => {
   const guides = findKeyValuePair(getNestedValue(['ast', 'children'], __refDocMapping), 'name', 'guide-index') || [];

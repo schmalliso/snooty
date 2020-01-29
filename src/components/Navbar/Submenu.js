@@ -39,9 +39,9 @@ export default class Submenu extends Component {
         </span>
         <ul className={submenuClass}>
           {children.map((listItem, index) => (
-            <li className="submenu__item">
+            <li className="submenu__item" key={index}>
               {listItem.children && listItem.children.length > 0 ? (
-                <Submenu key={index} {...listItem} />
+                <Submenu {...listItem} />
               ) : (
                 <a href={listItem.url}>{listItem.text}</a>
               )}
@@ -56,5 +56,5 @@ export default class Submenu extends Component {
 Submenu.propTypes = {
   open: PropTypes.bool,
   title: PropTypes.string,
-  children: PropTypes.arrayOf(PropTypes.node),
+  children: PropTypes.arrayOf(PropTypes.object),
 };
