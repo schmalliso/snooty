@@ -40,7 +40,7 @@ export default class Navbar extends Component {
   }
 
   componentDidMount() {
-    this.animateSearch(this.inputRef.current);
+    this.animateSearch();
 
     if (this.state.enableMarian) {
       let label = document.body.getAttribute('data-project-title');
@@ -61,8 +61,16 @@ export default class Navbar extends Component {
     }
   }
 
+  componentDidUpdate(prevProps) {
+    // Resize search bar on new page
+    if (prevProps.slug !== this.props.slug) {
+      this.animateSearch();
+    }
+  }
+
   // Animate the search bar on focus, blur and window resize
-  animateSearch = input => {
+  animateSearch = () => {
+    const input = this.inputRef.current;
     // Set the initial size of the search bar depending on browser size
     input.style.width = this.calculateBlurredWidth();
 
@@ -81,7 +89,7 @@ export default class Navbar extends Component {
 
     // Resize search bar when the browser is resized
     window.addEventListener('resize', () => {
-      document.querySelector('.navbar-search').style.width = this.calculateBlurredWidth();
+      input.style.width = this.calculateBlurredWidth();
     });
   };
 
