@@ -48,11 +48,13 @@ import Superscript from './Superscript';
 import Image from './Image';
 import RefRole from './RefRole';
 import Target from './Target';
+import Operation from './Operation';
 
 import RoleAbbr from './Roles/Abbr';
 import RoleClass from './Roles/Class';
 import RoleFile from './Roles/File';
 import RoleGUILabel from './Roles/GUILabel';
+import RoleRequired from './Roles/Required';
 
 const IGNORED_NAMES = ['default-domain', 'toctree'];
 const IGNORED_TYPES = ['comment', 'substitution_definition'];
@@ -65,6 +67,7 @@ export default class ComponentFactory extends Component {
       class: RoleClass,
       file: RoleFile,
       guilabel: RoleGUILabel,
+      required: RoleRequired,
     };
     this.componentMap = {
       admonition: Admonition,
@@ -97,6 +100,7 @@ export default class ComponentFactory extends Component {
       literalinclude: LiteralInclude,
       meta: Meta,
       only: Cond,
+      operation: Operation,
       paragraph: Paragraph,
       ref_role: RefRole,
       reference: Reference,
