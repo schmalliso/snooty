@@ -72,7 +72,6 @@ export default class ComponentFactory extends Component {
       'icon-fa5': RoleIcon,
       'icon-fa4': RoleIcon,
       'icon-mms': RoleIcon,
-      'compass-icon': RoleIcon,
       'icon-charts': RoleIcon,
     };
     this.componentMap = {

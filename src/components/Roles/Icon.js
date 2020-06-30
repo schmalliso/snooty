@@ -3,11 +3,16 @@ import PropTypes from 'prop-types';
 import Icon from '@leafygreen-ui/icon';
 
 const RoleIcon = ({ nodeData: { target, name } }) => {
-  if (name === 'icon') {
-    return <i class={`${target} fas`}></i>;
-    // return <Icon glyph={`${target}`} fill="#FF0000" />;
+  if ((name === 'icon') | (name === 'icon-fa5')) {
+    return <i class={`fa-${target} fas`}></i>;
+  } else if (name === 'icon-fa4') {
+    return <i class={`fa4-${target} fa4`}></i>;
+  } else if (name === 'icon-charts') {
+    return <i class={`charts-icon-${target} charts-icon`}></i>;
+  } else if (name === 'icon-mms') {
+    return <i class={`mms-icon-${target} mms-icon`}></i>;
   } else {
-    return <i class={`${target} fa`}></i>;
+    return '<em>oh dear </em>';
   }
 };
 
