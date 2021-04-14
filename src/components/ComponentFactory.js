@@ -144,6 +144,7 @@ const componentMap = {
   rubric: Rubric,
   'search-results': SearchResults,
   section: Section,
+  sharedinclude: Include,
   step: Step,
   steps: Steps,
   strong: Strong,
