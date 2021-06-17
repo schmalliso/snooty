@@ -7,6 +7,7 @@ import { useSiteMetadata } from '../hooks/use-site-metadata';
 import { generatePathPrefix } from '../utils/generate-path-prefix';
 import { normalizePath } from '../utils/normalize-path';
 
+
 const zip = (a, b) => {
   // Zip arrays a and b into an object where a is used for keys and b for values
   const shorter = a.length > b.length ? b : a;

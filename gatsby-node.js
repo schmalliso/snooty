@@ -8,11 +8,16 @@ const { getGuideMetadata } = require('./src/utils/get-guide-metadata');
 const { getPageSlug } = require('./src/utils/get-page-slug');
 const { siteMetadata } = require('./src/utils/site-metadata');
 const { assertTrailingSlash } = require('./src/utils/assert-trailing-slash');
-const { DOCUMENTS_COLLECTION, METADATA_COLLECTION } = require('./src/build-constants');
+const { DOCUMENTS_COLLECTION, METADATA_COLLECTION, BRANCHES_COLLECTION } = require('./src/build-constants');
 const { constructPageIdPrefix } = require('./src/utils/setup/construct-page-id-prefix');
 const { constructBuildFilter } = require('./src/utils/setup/construct-build-filter');
 
 const DB = siteMetadata.database;
+const reposDB = 'pool_test'
+const reposFilter = { prefix: siteMetadata.project }
+
+
+
 
 const buildFilter = constructBuildFilter(siteMetadata);
 
@@ -27,6 +32,18 @@ let RESOLVED_REF_DOC_MAPPING = {};
 let stitchClient;
 
 const assets = new Map();
+
+exports.branches = async() => {
+  
+  stitchClient = await initStitch();
+  
+  const branches = await stitchClient.callFunction('fetchDocument', [reposDB, BRANCHES_COLLECTION, reposFilter]);
+
+  if (branches.length === 0) {
+    console.error('No branches found in the database.');
+    process.exit(1)
+  }
+  
 
 exports.sourceNodes = async () => {
   // setup env variables
