@@ -13,17 +13,15 @@ const { constructPageIdPrefix } = require('./src/utils/setup/construct-page-id-p
 const { constructBuildFilter } = require('./src/utils/setup/construct-build-filter');
 
 const DB = siteMetadata.database;
-const reposDB = 'pool_test'
-const reposFilter = { prefix: siteMetadata.project }
-
-
-
+const reposDB = 'pool_test';
+const reposFilter = { 'repoName': 'docs' };
 
 const buildFilter = constructBuildFilter(siteMetadata);
 
 // different types of references
 const PAGES = [];
 const GUIDES_METADATA = {};
+const BRANCHES = [];
 
 // in-memory object with key/value = filename/document
 let RESOLVED_REF_DOC_MAPPING = {};
@@ -32,18 +30,6 @@ let RESOLVED_REF_DOC_MAPPING = {};
 let stitchClient;
 
 const assets = new Map();
-
-exports.branches = async() => {
-  
-  stitchClient = await initStitch();
-  
-  const branches = await stitchClient.callFunction('fetchDocument', [reposDB, BRANCHES_COLLECTION, reposFilter]);
-
-  if (branches.length === 0) {
-    console.error('No branches found in the database.');
-    process.exit(1)
-  }
-  
 
 exports.sourceNodes = async () => {
   // setup env variables
@@ -57,12 +43,11 @@ exports.sourceNodes = async () => {
   stitchClient = await initStitch();
 
   const documents = await stitchClient.callFunction('fetchDocuments', [DB, DOCUMENTS_COLLECTION, buildFilter]);
-
+  
   if (documents.length === 0) {
-    console.error('No documents matched your query.');
+    console.error('Snooty could not find AST entries for the', siteMetadata.parserBranch, 'branch of', siteMetadata.project);
     process.exit(1);
-  }
-
+  }  
   const pageIdPrefix = constructPageIdPrefix(siteMetadata);
   documents.forEach((doc) => {
     const { page_id, ...rest } = doc;
@@ -105,7 +90,15 @@ exports.createPages = async ({ actions }) => {
     transformBreadcrumbs(parentPaths, slugToTitle);
   }
 
-  // Save files in the static_files field of metadata document, including intersphinx inventories
+  try {
+    const branches = await stitchClient.callFunction('fetchDocument', [reposDB, BRANCHES_COLLECTION, reposFilter]);
+    BRANCHES.push(branches);
+  } catch(e) {
+    console.error(e)
+    console.error("No version information found for", siteMetadata.project);
+  }
+
+  //Save files in the static_files field of metadata document, including intersphinx inventories
   if (staticFiles) {
     await saveStaticFiles(staticFiles);
   }
@@ -122,6 +115,7 @@ exports.createPages = async ({ actions }) => {
           context: {
             slug,
             metadata: metadataMinusStatic,
+            repo_branches: BRANCHES[0],
             template: pageNodes?.options?.template,
             page: pageNodes,
             guidesMetadata: GUIDES_METADATA,

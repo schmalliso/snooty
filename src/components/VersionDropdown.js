@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { version } from 'react';
 import PropTypes from 'prop-types';
 import styled from '@emotion/styled';
 import { Option, Select, Size } from '@leafygreen-ui/select';
@@ -6,6 +6,7 @@ import { navigate as reachNavigate } from '@reach/router';
 import { useSiteMetadata } from '../hooks/use-site-metadata';
 import { generatePathPrefix } from '../utils/generate-path-prefix';
 import { normalizePath } from '../utils/normalize-path';
+import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
 
 
 const zip = (a, b) => {
@@ -44,25 +45,55 @@ const VersionDropdown = ({
       branches: { published: gitBranches },
     },
   },
+  repo_branches,
   slug,
 }) => {
   const siteMetadata = useSiteMetadata();
   const { parserBranch, pathPrefix, project, snootyEnv } = siteMetadata;
 
-  const prefixVersion = (version) => {
-    // Display as "Version X" on menu if numeric version
+  // YOU HAVE THE DATA, NOW YOU MUST USE THE DATA
+
+  const versionLabel = (versionSelectorLabel, urlSlug, gitBranchName) => {
+    // Display value of versionSelectorLabel if it's set
+    if (versionSelectorLabel !== undefined) {
+      return `${versionSelectorLabel}`;
+    }
+
     const isNumeric = (version = '') => {
       const [firstWord] = version.split();
       return !isNaN(firstWord);
     };
-    return `${isNumeric(version) ? 'Version ' : ''}${version}`;
-  };
+
+    // Display as Version X on menu if numeric version (based on the urlSlug field).
+    if (urlSlug !== undefined) {
+      return `${isNumeric(urlSlug) ? 'Version ' : ''}${urlSlug}`;
+    }
+    // Display as Version X on menu if numeric version (based on the gitBranchName field).
+    else {
+      return `${isNumeric(gitBranchName) ? 'Version ' : ''}${gitBranchName}`;
+    }
+  }
 
   // Zip two sections of data to map git branches to their "pretty" names
-  const gitNamedMapping = zip(gitBranches, active);
+  // const gitNamedMapping = zip(gitBranches, active);
+
+  // Zip two sections of data to map git branches to their "pretty" names
+  const gitNamedMappingOLD = zip(gitBranches, active);
+  console.log(gitNamedMappingOLD);
+
+  const gitNamedMapping = (branches = []) => {
+    const branchNameToLabel = []
+    branches.forEach(branch => {
+      const branchName = branch['gitBranchName'];
+      const UIlabel=versionLabel(branch['versionSelectorLabel'], branch['urlSlug'], branch['gitBranchName']);
+      branchNameToLabel.push({branchName: UIlabel})
+    });
+    console.log(branchNameToLabel);
+    return branchNameToLabel
+  };
 
   // Don't render dropdown if there is only 1 version of the repo
-  if (!active || active.length <= 1) {
+  if (branchList.length <= 1) {
     return null;
   }
 
@@ -104,11 +135,11 @@ const VersionDropdown = ({
       popoverZIndex={3}
       value={parserBranch}
     >
-      {Object.entries(gitNamedMapping).map(([branch, name]) => {
+      {Object.entries(gitNamedMappingOLD).map(([branch, name]) => {
         const url = getUrl(branch);
         return (
           <Option key={branch} value={branch}>
-            <OptionLink href={url}>{prefixVersion(name)}</OptionLink>
+            <OptionLink href={url}>{name}</OptionLink>
           </Option>
         );
       })}
