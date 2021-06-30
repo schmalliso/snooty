@@ -15,7 +15,7 @@ const Document = ({
   pageContext: {
     slug,
     page,
-    metadata: { parentPaths, publishedBranches, slugToTitle: slugTitleMapping, title, toctree, toctreeOrder },
+    metadata: { parentPaths, slugToTitle: slugTitleMapping, title, toctree, toctreeOrder },
     repo_branches,
   },
 }) => {
@@ -42,7 +42,6 @@ const Document = ({
             <Sidebar
               slug={slug}
               repo_branches={repo_branches}
-              publishedBranches={publishedBranches}
               toctreeData={toctree}
               toggleLeftColumn={toggleLeftColumn}
             />

@@ -15,7 +15,7 @@ const { constructBuildFilter } = require('./src/utils/setup/construct-build-filt
 const DB = siteMetadata.database;
 const reposDB = siteMetadata.reposDatabase;
 
-const reposFilter = { prefix: siteMetadata.prefix };
+const reposFilter = { project: siteMetadata.project };
 const buildFilter = constructBuildFilter(siteMetadata);
 
 // different types of references

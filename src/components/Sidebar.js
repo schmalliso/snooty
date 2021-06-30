@@ -5,7 +5,7 @@ import TableOfContents from './TableOfContents';
 import { formatText } from '../utils/format-text';
 import style from '../styles/sidebar.module.css';
 
-const Sidebar = ({ slug, repo_branches, publishedBranches, toctreeData, toggleLeftColumn }) => {
+const Sidebar = ({ slug, repo_branches, toctreeData, toggleLeftColumn }) => {
   const { title } = toctreeData;
 
   // Calculate height of the fixed header so that the TOC can occupy the rest of the vertical space.
@@ -28,9 +28,7 @@ const Sidebar = ({ slug, repo_branches, publishedBranches, toctreeData, toggleLe
                 {formatText(title)}
               </Link>
             </h3>
-            {publishedBranches && (
-              <VersionDropdown slug={slug} publishedBranches={publishedBranches} repo_branches={repo_branches} />
-            )}
+            {<VersionDropdown slug={slug} repo_branches={repo_branches} />}
           </div>
           <TableOfContents toctreeData={toctreeData} height={fixedHeight} activeSection={slug} />
         </div>
