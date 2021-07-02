@@ -67,6 +67,7 @@ export const REF_TARGETS = {
 };
 
 export const DOCS_URL = 'https://docs.mongodb.com';
+export const LEGACY_URL = 'https://docs.mongodb.com/legacy/';
 export const MARIAN_URL = 'https://marian.mongodb.com';
 
 export const SUGGESTION_WHITELIST = [
