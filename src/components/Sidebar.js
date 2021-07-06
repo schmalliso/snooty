@@ -15,6 +15,8 @@ const Sidebar = ({ slug, repo_branches, toctreeData, toggleLeftColumn }) => {
     setFixedHeight(fixedHeading.current.clientHeight);
   }, []);
 
+  const shouldDisplayVersions = repo_branches?.branches?.length > 1;
+
   return (
     <aside className={`sidebar ${style.sidebar}`} id="sidebar">
       <div className={`sphinxsidebar ${style.sphinxsidebar}`} id="sphinxsidebar">
@@ -28,7 +30,7 @@ const Sidebar = ({ slug, repo_branches, toctreeData, toggleLeftColumn }) => {
                 {formatText(title)}
               </Link>
             </h3>
-            {<VersionDropdown slug={slug} repo_branches={repo_branches} />}
+            {shouldDisplayVersions && <VersionDropdown slug={slug} repo_branches={repo_branches} />}
           </div>
           <TableOfContents toctreeData={toctreeData} height={fixedHeight} activeSection={slug} />
         </div>
